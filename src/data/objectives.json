@@ -1,0 +1,14 @@
+[
+  {
+    "id": "objective_1",
+    "position": { "x": 10, "y": 6 }
+  },
+  {
+    "id": "objective_2",
+    "position": { "x": 10, "y": 10 }
+  },
+  {
+    "id": "objective_3",
+    "position": { "x": 10, "y": 15 }
+  }
+]

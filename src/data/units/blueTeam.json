@@ -1,0 +1,50 @@
+[
+  {
+    "id": "blue_hunter",
+    "name": "Blue Hunter",
+    "team": "blue",
+    "unitClass": "Hunter",
+    "spriteKey": "hunter-blue",
+    "stats": {
+      "maxHp": 25,
+      "hp": 25,
+      "movementRange": 5,
+      "attackBonus": 4,
+      "evasion": 14,
+      "armor": 1
+    },
+    "startPosition": { "x": 3, "y": 3 }
+  },
+  {
+    "id": "blue_soldier",
+    "name": "Blue Soldier",
+    "team": "blue",
+    "unitClass": "Soldier",
+    "spriteKey": "soldier-blue",
+    "stats": {
+      "maxHp": 35,
+      "hp": 35,
+      "movementRange": 4,
+      "attackBonus": 3,
+      "evasion": 11,
+      "armor": 3
+    },
+    "startPosition": { "x": 3, "y": 10 }
+  },
+  {
+    "id": "blue_thief",
+    "name": "Blue Thief",
+    "team": "blue",
+    "unitClass": "Thief",
+    "spriteKey": "thief-blue",
+    "stats": {
+      "maxHp": 20,
+      "hp": 20,
+      "movementRange": 6,
+      "attackBonus": 2,
+      "evasion": 16,
+      "armor": 0
+    },
+    "startPosition": { "x": 3, "y": 18 }
+  }
+]

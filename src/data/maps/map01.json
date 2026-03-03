@@ -1,0 +1,257 @@
+{
+  "compressionlevel": -1,
+  "height": 22,
+  "infinite": false,
+  "layers": [
+    {
+    "data": [
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+      ],
+      "height": 22,
+      "id": 1,
+      "name": "Ground",
+      "opacity": 1,
+      "type": "tilelayer",
+      "visible": true,
+      "width": 22,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 2,
+      "name": "Objects",
+      "objects": [
+        {
+          "height": 0,
+          "id": 1,
+          "name": "BlueSpawn1",
+          "point": true,
+          "rotation": 0,
+          "type": "spawn",
+          "visible": true,
+          "width": 0,
+          "x": 96,
+          "y": 96,
+          "properties": [
+            {
+              "name": "team",
+              "type": "string",
+              "value": "blue"
+            },
+            {
+              "name": "unitId",
+              "type": "string",
+              "value": "blue_hunter"
+            }
+          ]
+        },
+        {
+          "height": 0,
+          "id": 2,
+          "name": "BlueSpawn2",
+          "point": true,
+          "rotation": 0,
+          "type": "spawn",
+          "visible": true,
+          "width": 0,
+          "x": 96,
+          "y": 320,
+          "properties": [
+            {
+              "name": "team",
+              "type": "string",
+              "value": "blue"
+            },
+            {
+              "name": "unitId",
+              "type": "string",
+              "value": "blue_soldier"
+            }
+          ]
+        },
+        {
+          "height": 0,
+          "id": 3,
+          "name": "BlueSpawn3",
+          "point": true,
+          "rotation": 0,
+          "type": "spawn",
+          "visible": true,
+          "width": 0,
+          "x": 96,
+          "y": 576,
+          "properties": [
+            {
+              "name": "team",
+              "type": "string",
+              "value": "blue"
+            },
+            {
+              "name": "unitId",
+              "type": "string",
+              "value": "blue_thief"
+            }
+          ]
+        },
+        {
+          "height": 0,
+          "id": 4,
+          "name": "RedSpawn1",
+          "point": true,
+          "rotation": 0,
+          "type": "spawn",
+          "visible": true,
+          "width": 0,
+          "x": 576,
+          "y": 96,
+          "properties": [
+            {
+              "name": "team",
+              "type": "string",
+              "value": "red"
+            },
+            {
+              "name": "unitId",
+              "type": "string",
+              "value": "red_hunter"
+            }
+          ]
+        },
+        {
+          "height": 0,
+          "id": 5,
+          "name": "RedSpawn2",
+          "point": true,
+          "rotation": 0,
+          "type": "spawn",
+          "visible": true,
+          "width": 0,
+          "x": 576,
+          "y": 320,
+          "properties": [
+            {
+              "name": "team",
+              "type": "string",
+              "value": "red"
+            },
+            {
+              "name": "unitId",
+              "type": "string",
+              "value": "red_soldier"
+            }
+          ]
+        },
+        {
+          "height": 0,
+          "id": 6,
+          "name": "RedSpawn3",
+          "point": true,
+          "rotation": 0,
+          "type": "spawn",
+          "visible": true,
+          "width": 0,
+          "x": 576,
+          "y": 576,
+          "properties": [
+            {
+              "name": "team",
+              "type": "string",
+              "value": "red"
+            },
+            {
+              "name": "unitId",
+              "type": "string",
+              "value": "red_thief"
+            }
+          ]
+        },
+        {
+          "height": 0,
+          "id": 7,
+          "name": "Objective1",
+          "point": true,
+          "rotation": 0,
+          "type": "objective",
+          "visible": true,
+          "width": 0,
+          "x": 320,
+          "y": 192
+        },
+        {
+          "height": 0,
+          "id": 8,
+          "name": "Objective2",
+          "point": true,
+          "rotation": 0,
+          "type": "objective",
+          "visible": true,
+          "width": 0,
+          "x": 320,
+          "y": 320
+        },
+        {
+          "height": 0,
+          "id": 9,
+          "name": "Objective3",
+          "point": true,
+          "rotation": 0,
+          "type": "objective",
+          "visible": true,
+          "width": 0,
+          "x": 320,
+          "y": 480
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    }
+  ],
+  "nextlayerid": 3,
+  "nextobjectid": 10,
+  "orientation": "orthogonal",
+  "renderorder": "right-down",
+  "tiledversion": "1.10.2",
+  "tileheight": 32,
+  "tilesets": [
+    {
+      "firstgid": 1,
+      "name": "world",
+      "tilewidth": 32,
+      "tileheight": 32,
+      "tilecount": 100,
+      "columns": 10,
+      "image": "../../assets/tilesets/world.png",
+      "imagewidth": 320,
+      "imageheight": 320
+    }
+  ],
+  "tilewidth": 32,
+  "type": "map",
+  "version": "1.10",
+  "width": 22
+}

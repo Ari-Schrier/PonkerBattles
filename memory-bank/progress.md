@@ -1,0 +1,88 @@
+# Progress
+
+## Current status
+Phaser project scaffolding and core implementation complete. Game is in testable state with functional gameplay loop. Ready for comprehensive playtesting and polish.
+
+## Completed
+
+### Project Infrastructure (2026-03-02)
+- Initialized TypeScript + Vite + npm project
+- Configured `tsconfig.json` with path aliases (@config, @engine, @scenes, etc.)
+- Configured `vite.config.ts` for asset handling and code splitting
+- Created `package.json` with Phaser 3.80.1, TypeScript 5.3.3, Vite 5.1.3
+- Set up `.gitignore` and `index.html` entry point
+- Installed dependencies successfully
+
+### Core Configuration & Data
+- Created `src/config/gameConfig.ts` as single source of truth for balance constants
+  - MAX_ROUNDS = 4, OBJECTIVE_CONTROL_RADIUS = 2
+  - Hit formula: 2d10 - 8 + attackBonus >= evasion
+  - MIN_DAMAGE = 1, TILE_SIZE = 32, MAP dimensions 22x22
+- Created `src/engine/types.ts` with comprehensive TypeScript interfaces
+- Created unit data files:
+  - `blueTeam.json`: Hunter (HP 25, Move 5), Soldier (HP 35, Move 4), Thief (HP 20, Move 6)
+  - `redTeam.json`: Same classes with mirrored starting positions
+- Created `objectives.json` with 3 center-line objectives
+- Created `map01.json` as Tiled JSON export (22x22 grid, basic terrain, spawn/objective markers)
+
+### Engine Implementation
+- **CombatResolver.ts**: Hit rolls (2d10), attack resolution, damage calculation with armor mitigation
+- **MovementEngine.ts**: Flood-fill pathfinding, legal move calculation, adjacency checks
+- **ObjectiveController.ts**: Control radius checks, majority determination, scoring, winner calculation
+- TurnManager.ts: Phase state machine, alternating activation tracking (with uneven teams), round progression, game end detection
+
+### Phaser Scenes
+- **PreloadScene.ts**: Asset loading with progress bar, spritesheet configuration (32x32 frames)
+- **BattleScene.ts**: 
+  - Tilemap rendering from Tiled JSON
+  - Unit sprite creation with frame 0 display
+  - Objective visual markers with color-coded control status
+  - Click-based interaction (select, move, attack)
+  - Movement range highlighting (green) and attack targets (red)
+  - Turn progression and UI updates
+- **ResultsScene.ts**: Winner announcement, color-coded results, click-to-restart
+
+### Asset Integration
+- Fixed spritesheet loading issue: Changed from `load.image()` to `load.spritesheet()` with 32x32 frame configuration
+- Units now display as single sprites using `setFrame(0)`
+
+## Remaining (MVC milestone)
+
+### Testing & Validation
+- End-to-end gameplay testing (full 4-round match)
+- Combat formula verification (hit rates, damage values)
+- Objective control scoring validation
+- Round progression edge cases
+- Winner determination in tie scenarios
+
+### Polish (Optional for MVC)
+- Visual feedback improvements
+- UI/UX refinements
+- Error handling and edge cases
+
+### Deployment (User handling separately)
+- Azure Static Web Apps configuration
+- Build verification (`npm run build`)
+- Production testing (`npm run preview`)
+
+## Known issues / watch points
+- Spritesheet loading: RESOLVED (using load.spritesheet with 32x32 frames)
+- Movement calculation may need optimization for larger maps (acceptable for 22x22)
+- Turn progression logic needs comprehensive testing
+- Defeated unit handling needs validation
+
+## Technical debt / future considerations
+- Animation system (out of scope for MVC, but spritesheet structure supports it)
+- AI opponent (milestone 2+)
+- Networked multiplayer (milestone 2+)
+- Map editor/uploader (milestone 2+)
+- Party builder UI (milestone 2+)
+- Unit ability system beyond basic attack
+
+## Change log
+- 2026-03-02: Initial memory bank bootstrap
+- 2026-03-02: Project scaffolding complete (TypeScript + Vite + Phaser)
+- 2026-03-02: Core engine modules implemented
+- 2026-03-02: All three Phaser scenes created
+- 2026-03-02: Spritesheet loading issue identified and fixed
+- 2026-03-02: Memory bank updated post-implementation
