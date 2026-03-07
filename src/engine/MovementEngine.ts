@@ -71,6 +71,11 @@ export class MovementEngine {
           continue;
         }
 
+        // Skip the starting tile
+        if (key === startKey) {
+          continue;
+        }
+
         // Add to legal moves once
         if (!legalMoveKeys.has(key)) {
           legalMoveKeys.add(key);
