@@ -27,6 +27,8 @@ export interface Unit {
   stats: UnitStats;
   position: Position;
   hasActivated: boolean;
+  hasUsedMovement: boolean;
+  hasUsedMainAction: boolean;
 }
 
 export interface Tile {

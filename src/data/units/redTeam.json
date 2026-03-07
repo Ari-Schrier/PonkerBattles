@@ -6,12 +6,12 @@
     "unitClass": "Hunter",
     "spriteKey": "hunter-red",
     "stats": {
-      "maxHp": 25,
-      "hp": 25,
-      "movementRange": 5,
-      "attackBonus": 4,
-      "evasion": 14,
-      "armor": 1
+      "maxHp": 3,
+      "hp": 3,
+      "movementRange": 6,
+      "attackBonus": 0,
+      "evasion": 0,
+      "armor": 0
     },
     "startPosition": { "x": 18, "y": 3 }
   },
@@ -22,12 +22,12 @@
     "unitClass": "Soldier",
     "spriteKey": "soldier-red",
     "stats": {
-      "maxHp": 35,
-      "hp": 35,
-      "movementRange": 4,
-      "attackBonus": 3,
-      "evasion": 11,
-      "armor": 3
+      "maxHp": 3,
+      "hp": 3,
+      "movementRange": 6,
+      "attackBonus": 0,
+      "evasion": 0,
+      "armor": 0
     },
     "startPosition": { "x": 18, "y": 10 }
   },
@@ -38,11 +38,11 @@
     "unitClass": "Thief",
     "spriteKey": "thief-red",
     "stats": {
-      "maxHp": 20,
-      "hp": 20,
+      "maxHp": 3,
+      "hp": 3,
       "movementRange": 6,
-      "attackBonus": 2,
-      "evasion": 16,
+      "attackBonus": 0,
+      "evasion": 0,
       "armor": 0
     },
     "startPosition": { "x": 18, "y": 18 }

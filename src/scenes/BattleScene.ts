@@ -16,6 +16,7 @@ export class BattleScene extends Phaser.Scene {
   private gameState!: GameState;
   private turnManager!: TurnManager;
   private unitSprites: Map<string, Phaser.GameObjects.Image> = new Map();
+  private healthTexts: Map<string, Phaser.GameObjects.Text> = new Map();
   private objectiveSprites: Phaser.GameObjects.Graphics[] = [];
   private selectedUnit: Unit | null = null;
   private highlightGraphics!: Phaser.GameObjects.Graphics;
@@ -76,7 +77,9 @@ export class BattleScene extends Phaser.Scene {
         spriteKey: unitData.spriteKey,
         stats: { ...unitData.stats },
         position: { ...unitData.startPosition },
-        hasActivated: false
+        hasActivated: false,
+        hasUsedMovement: false,
+        hasUsedMainAction: false
       });
     });
 
@@ -123,6 +126,17 @@ export class BattleScene extends Phaser.Scene {
       sprite.setData('unit', unit);
       
       this.unitSprites.set(unit.id, sprite);
+
+      // Create health text above unit
+      const healthText = this.add.text(x, y - 20, `${unit.stats.hp}/${unit.stats.maxHp}`, {
+        fontSize: '12px',
+        color: '#ffffff',
+        backgroundColor: '#000000',
+        padding: { x: 2, y: 2 }
+      });
+      healthText.setOrigin(0.5, 0.5); // Center the text
+      
+      this.healthTexts.set(unit.id, healthText);
     });
   }
 
@@ -148,7 +162,16 @@ export class BattleScene extends Phaser.Scene {
     ];
 
     if (this.selectedUnit) {
-      text.push('', `Selected: ${this.selectedUnit.name}`, `HP: ${this.selectedUnit.stats.hp}/${this.selectedUnit.stats.maxHp}`);
+      const movementStatus = this.selectedUnit.hasUsedMovement ? '✓' : 'Available';
+      const mainActionStatus = this.selectedUnit.hasUsedMainAction ? '✓' : 'Available';
+      
+      text.push(
+        '',
+        `Selected: ${this.selectedUnit.name}`,
+        `HP: ${this.selectedUnit.stats.hp}/${this.selectedUnit.stats.maxHp}`,
+        `Movement: ${movementStatus}`,
+        `Main Action: ${mainActionStatus}`
+      );
     }
 
     this.uiText.setText(text.join('\n'));
@@ -164,11 +187,18 @@ export class BattleScene extends Phaser.Scene {
     if (this.selectedUnit) {
       // Unit is already selected
       if (clickedUnit && clickedUnit === this.selectedUnit) {
-        // Deselect
-        this.deselectUnit();
+        // If unit has used any actions, end their turn
+        if (this.selectedUnit.hasUsedMovement || this.selectedUnit.hasUsedMainAction) {
+          this.endUnitActivation(this.selectedUnit);
+        } else {
+          // Otherwise just deselect
+          this.deselectUnit();
+        }
       } else if (clickedUnit && clickedUnit.team !== this.selectedUnit.team) {
-        // Attack enemy
-        this.attemptAttack(this.selectedUnit, clickedUnit);
+        if (!this.selectedUnit.hasUsedMainAction) {
+          // Attack enemy
+          this.attemptAttack(this.selectedUnit, clickedUnit);
+        }
       } else {
         // Try to move
         this.attemptMove(this.selectedUnit, { x: tileX, y: tileY });
@@ -204,33 +234,55 @@ export class BattleScene extends Phaser.Scene {
       }
     });
 
-    // Get legal moves
-    const legalMoves = MovementEngine.getLegalMoves(
-      unit,
-      occupiedPositions,
-      GameConfig.MAP_WIDTH,
-      GameConfig.MAP_HEIGHT
-    );
+    // Show movement highlights if movement action available
+    if (!unit.hasUsedMovement) {
+      const legalMoves = MovementEngine.getLegalMoves(
+        unit,
+        occupiedPositions,
+        GameConfig.MAP_WIDTH,
+        GameConfig.MAP_HEIGHT
+      );
 
-    // Highlight tiles
-    this.highlightGraphics.fillStyle(0x00ff00, 0.3);
-    legalMoves.forEach(pos => {
-      const x = pos.x * GameConfig.TILE_SIZE;
-      const y = pos.y * GameConfig.TILE_SIZE;
-      this.highlightGraphics.fillRect(x, y, GameConfig.TILE_SIZE, GameConfig.TILE_SIZE);
-    });
-
-    // Highlight attackable enemies
-    const adjacentPositions = MovementEngine.getAdjacentPositions(unit.position);
-    this.highlightGraphics.fillStyle(0xff0000, 0.3);
-    adjacentPositions.forEach(pos => {
-      const enemy = this.getUnitAtPosition(pos);
-      if (enemy && enemy.team !== unit.team) {
+      // Green highlights for normal movement
+      this.highlightGraphics.fillStyle(0x00ff00, 0.3);
+      legalMoves.forEach(pos => {
         const x = pos.x * GameConfig.TILE_SIZE;
         const y = pos.y * GameConfig.TILE_SIZE;
         this.highlightGraphics.fillRect(x, y, GameConfig.TILE_SIZE, GameConfig.TILE_SIZE);
-      }
-    });
+      });
+    }
+
+    // Show dash highlights if movement used but main action available
+    if (unit.hasUsedMovement && !unit.hasUsedMainAction) {
+      const dashMoves = MovementEngine.getLegalMoves(
+        unit,
+        occupiedPositions,
+        GameConfig.MAP_WIDTH,
+        GameConfig.MAP_HEIGHT
+      );
+
+      // Blue highlights for dash movement
+      this.highlightGraphics.fillStyle(0x0099ff, 0.3);
+      dashMoves.forEach(pos => {
+        const x = pos.x * GameConfig.TILE_SIZE;
+        const y = pos.y * GameConfig.TILE_SIZE;
+        this.highlightGraphics.fillRect(x, y, GameConfig.TILE_SIZE, GameConfig.TILE_SIZE);
+      });
+    }
+
+    // Show attackable enemies if main action available
+    if (!unit.hasUsedMainAction) {
+      const adjacentPositions = MovementEngine.getAdjacentPositions(unit.position);
+      this.highlightGraphics.fillStyle(0xff0000, 0.3);
+      adjacentPositions.forEach(pos => {
+        const enemy = this.getUnitAtPosition(pos);
+        if (enemy && enemy.team !== unit.team) {
+          const x = pos.x * GameConfig.TILE_SIZE;
+          const y = pos.y * GameConfig.TILE_SIZE;
+          this.highlightGraphics.fillRect(x, y, GameConfig.TILE_SIZE, GameConfig.TILE_SIZE);
+        }
+      });
+    }
   }
 
   private attemptMove(unit: Unit, targetPos: Position): void {
@@ -253,40 +305,87 @@ export class BattleScene extends Phaser.Scene {
     const isLegal = legalMoves.some(pos => pos.x === targetPos.x && pos.y === targetPos.y);
 
     if (isLegal) {
+      // Determine if this is normal movement or dash
+      const isDash = unit.hasUsedMovement && !unit.hasUsedMainAction;
+      
       // Move unit
       unit.position = targetPos;
       
-      // Update sprite
+      // Update sprite and health text position
+      const newX = targetPos.x * GameConfig.TILE_SIZE + GameConfig.TILE_SIZE / 2;
+      const newY = targetPos.y * GameConfig.TILE_SIZE + GameConfig.TILE_SIZE / 2;
+      
       const sprite = this.unitSprites.get(unit.id);
       if (sprite) {
-        sprite.setPosition(
-          targetPos.x * GameConfig.TILE_SIZE + GameConfig.TILE_SIZE / 2,
-          targetPos.y * GameConfig.TILE_SIZE + GameConfig.TILE_SIZE / 2
-        );
+        sprite.setPosition(newX, newY);
       }
 
-      // End unit's turn
-      this.endUnitActivation(unit);
+      const healthText = this.healthTexts.get(unit.id);
+      if (healthText) {
+        healthText.setPosition(newX, newY - 20);
+      }
+
+      // Mark appropriate action as used
+      if (isDash) {
+        unit.hasUsedMainAction = true;
+      } else {
+        unit.hasUsedMovement = true;
+      }
+
+      // Check if unit's turn is complete
+      if (this.isUnitTurnComplete(unit)) {
+        this.endUnitActivation(unit);
+      } else {
+        // Re-highlight available actions
+        this.showMovementRange(unit);
+        this.updateUI();
+      }
     }
   }
 
   private attemptAttack(attacker: Unit, defender: Unit): void {
+    if (attacker.hasUsedMainAction) {
+      return;
+    }
+
     if (MovementEngine.isAdjacent(attacker.position, defender.position)) {
       const result = CombatResolver.resolveAttack(attacker, defender);
       
       console.log(`${attacker.name} attacks ${defender.name}: ${result.hit ? 'HIT' : 'MISS'}${result.hit ? ` for ${result.damage} damage` : ''}`);
 
+      // Update defender's health text
+      const defenderHealthText = this.healthTexts.get(defender.id);
+      if (defenderHealthText) {
+        defenderHealthText.setText(`${defender.stats.hp}/${defender.stats.maxHp}`);
+      }
+
       if (result.targetDefeated) {
-        // Remove defeated unit sprite
+        // Remove defeated unit sprite and health text
         const sprite = this.unitSprites.get(defender.id);
         if (sprite) {
           sprite.setAlpha(0.3);
         }
+        if (defenderHealthText) {
+          defenderHealthText.setAlpha(0.3);
+        }
       }
 
-      // End attacker's turn
-      this.endUnitActivation(attacker);
+      // Mark main action as used
+      attacker.hasUsedMainAction = true;
+
+      // Check if unit's turn is complete
+      if (this.isUnitTurnComplete(attacker)) {
+        this.endUnitActivation(attacker);
+      } else {
+        // Re-highlight available actions
+        this.showMovementRange(attacker);
+        this.updateUI();
+      }
     }
+  }
+
+  private isUnitTurnComplete(unit: Unit): boolean {
+    return unit.hasUsedMovement && unit.hasUsedMainAction;
   }
 
   private endUnitActivation(unit: Unit): void {

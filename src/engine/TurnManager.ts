@@ -29,6 +29,8 @@ export class TurnManager {
   private resetActivations(): void {
     this.gameState.units.forEach(unit => {
       unit.hasActivated = false;
+      unit.hasUsedMovement = false;
+      unit.hasUsedMainAction = false;
     });
   }
 
