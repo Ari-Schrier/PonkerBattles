@@ -39,7 +39,10 @@ export class BattleScene extends Phaser.Scene {
     this.initializeGameState();
     
     // Create turn manager
-    this.turnManager = new TurnManager(this.gameState);
+    this.turnManager = new TurnManager(this.gameState, () => {
+      ObjectiveController.updateObjectiveControl(this.gameState.objectives, this.gameState.units);
+      this.updateObjectiveVisuals();
+    });
     this.turnManager.startGame();
 
     // Create graphics for highlights
@@ -50,6 +53,7 @@ export class BattleScene extends Phaser.Scene {
 
     // Place units
     this.createUnits();
+
 
     // Create UI
     this.createUI();
@@ -124,6 +128,7 @@ export class BattleScene extends Phaser.Scene {
       sprite.setFrame(0); // Display first frame of spritesheet
       sprite.setDisplaySize(GameConfig.TILE_SIZE, GameConfig.TILE_SIZE);
       sprite.setData('unit', unit);
+      sprite.disableInteractive();
       
       this.unitSprites.set(unit.id, sprite);
 
@@ -195,20 +200,42 @@ export class BattleScene extends Phaser.Scene {
           this.deselectUnit();
         }
       } else if (clickedUnit && clickedUnit.team !== this.selectedUnit.team) {
-        if (!this.selectedUnit.hasUsedMainAction) {
+        if (this.canUnitAttack(this.selectedUnit)) {
           // Attack enemy
           this.attemptAttack(this.selectedUnit, clickedUnit);
         }
       } else {
         // Try to move
-        this.attemptMove(this.selectedUnit, { x: tileX, y: tileY });
+        if (this.canUnitMove(this.selectedUnit)) {
+          this.attemptMove(this.selectedUnit, { x: tileX, y: tileY });
+        }
       }
     } else {
       // No unit selected
-      if (clickedUnit && clickedUnit.team === this.gameState.activeTeam && !clickedUnit.hasActivated) {
+      if (clickedUnit && this.canUnitSelect(clickedUnit)) {
         this.selectUnit(clickedUnit);
       }
     }
+  }
+
+  private canUnitSelect(unit: Unit): boolean {
+    return unit.team === this.gameState.activeTeam && !unit.hasActivated && unit.stats.hp > 0;
+  }
+
+  private canUnitTakeMove(unit: Unit): boolean {
+    return unit.stats.hp > 0 && !unit.hasUsedMovement;
+  }
+
+  private canUnitDash(unit: Unit): boolean {
+    return unit.stats.hp > 0 && unit.hasUsedMovement && !unit.hasUsedMainAction;
+  }
+
+  private canUnitMove(unit: Unit): boolean {
+    return this.canUnitTakeMove(unit) || this.canUnitDash(unit);
+  }
+
+  private canUnitAttack(unit: Unit): boolean {
+    return unit.stats.hp > 0 && !unit.hasUsedMainAction;
   }
 
   private selectUnit(unit: Unit): void {
@@ -235,7 +262,7 @@ export class BattleScene extends Phaser.Scene {
     });
 
     // Show movement highlights if movement action available
-    if (!unit.hasUsedMovement) {
+    if (this.canUnitTakeMove(unit)) {
       const legalMoves = MovementEngine.getLegalMoves(
         unit,
         occupiedPositions,
@@ -253,7 +280,7 @@ export class BattleScene extends Phaser.Scene {
     }
 
     // Show dash highlights if movement used but main action available
-    if (unit.hasUsedMovement && !unit.hasUsedMainAction) {
+    if (this.canUnitDash(unit)) {
       const dashMoves = MovementEngine.getLegalMoves(
         unit,
         occupiedPositions,
@@ -271,7 +298,7 @@ export class BattleScene extends Phaser.Scene {
     }
 
     // Show attackable enemies if main action available
-    if (!unit.hasUsedMainAction) {
+    if (this.canUnitAttack(unit)) {
       const adjacentPositions = MovementEngine.getAdjacentPositions(unit.position);
       this.highlightGraphics.fillStyle(0xff0000, 0.3);
       adjacentPositions.forEach(pos => {
@@ -332,6 +359,7 @@ export class BattleScene extends Phaser.Scene {
         unit.hasUsedMovement = true;
       }
 
+
       // Check if unit's turn is complete
       if (this.isUnitTurnComplete(unit)) {
         this.endUnitActivation(unit);
@@ -344,7 +372,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private attemptAttack(attacker: Unit, defender: Unit): void {
-    if (attacker.hasUsedMainAction) {
+    if (!this.canUnitAttack(attacker)) {
       return;
     }
 
@@ -353,6 +381,10 @@ export class BattleScene extends Phaser.Scene {
       
       console.log(`${attacker.name} attacks ${defender.name}: ${result.hit ? 'HIT' : 'MISS'}${result.hit ? ` for ${result.damage} damage` : ''}`);
 
+      if (result.hit) {
+        defender.stats.hp = Math.max(0, defender.stats.hp - result.damage);
+      }
+
       // Update defender's health text
       const defenderHealthText = this.healthTexts.get(defender.id);
       if (defenderHealthText) {
@@ -360,15 +392,18 @@ export class BattleScene extends Phaser.Scene {
       }
 
       if (result.targetDefeated) {
-        // Remove defeated unit sprite and health text
+        // Show corpse frame for defeated unit
         const sprite = this.unitSprites.get(defender.id);
         if (sprite) {
-          sprite.setAlpha(0.3);
+          sprite.setFrame(24);
+          sprite.setAlpha(1);
+          sprite.disableInteractive();
         }
         if (defenderHealthText) {
-          defenderHealthText.setAlpha(0.3);
+          defenderHealthText.setAlpha(1);
         }
       }
+
 
       // Mark main action as used
       attacker.hasUsedMainAction = true;
@@ -388,19 +423,45 @@ export class BattleScene extends Phaser.Scene {
     return unit.hasUsedMovement && unit.hasUsedMainAction;
   }
 
-  private endUnitActivation(unit: Unit): void {
-    this.turnManager.activateUnit(unit);
-    this.deselectUnit();
-
-    const roundComplete = this.turnManager.isRoundComplete();
-    if (roundComplete) {
-      ObjectiveController.updateObjectiveControl(this.gameState.objectives, this.gameState.units);
-      this.updateObjectiveVisuals();
+  private setUnitDimmed(unit: Unit, dimmed: boolean): void {
+    const sprite = this.unitSprites.get(unit.id);
+    const healthText = this.healthTexts.get(unit.id);
+    if (!sprite) {
+      return;
     }
 
-    this.turnManager.nextTeam();
-    
-    if (this.turnManager.isGameOver()) {
+    if (unit.stats.hp <= 0) {
+      sprite.setAlpha(1);
+      if (healthText) {
+        healthText.setAlpha(1);
+      }
+      return;
+    }
+
+    const alpha = dimmed ? 0.5 : 1;
+    sprite.setAlpha(alpha);
+    if (healthText) {
+      healthText.setAlpha(alpha);
+    }
+  }
+
+  private resetActivationVisuals(): void {
+    this.gameState.units.forEach(unit => {
+      this.setUnitDimmed(unit, false);
+    });
+  }
+
+  private endUnitActivation(unit: Unit): void {
+    this.setUnitDimmed(unit, true);
+    this.deselectUnit();
+
+    const { roundEnded, gameEnded } = this.turnManager.completeUnitActivation(unit);
+
+    if (roundEnded) {
+      this.resetActivationVisuals();
+    }
+
+    if (gameEnded) {
       this.endGame();
     }
 

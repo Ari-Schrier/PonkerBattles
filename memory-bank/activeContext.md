@@ -1,7 +1,7 @@
 # Active Context
 
 ## Current focus
-Initial Phaser project scaffolding is complete. The game now has a functional baseline with unit placement, movement, combat, and objective control. Currently addressing asset loading issues and preparing for full gameplay testing.
+Expanding the MVC combat loop with the two-action economy (movement + main action), plus in-battle visibility improvements (HP labels, activation dimming, corpse frame on death). Recent work focused on bug fixes around action gating and clearer turn feedback.
 
 ## Confirmed decisions
 - Phaser 3 engine with TypeScript
@@ -11,6 +11,10 @@ Initial Phaser project scaffolding is complete. The game now has a functional ba
 - Four rounds, three objectives, objective control radius of two tiles
 - Canonical hit and damage rules from design doc are active for MVC
 - Character spritesheets: 32x32 frames, displaying frame 0 for static sprites
+- Units get **movement + main action** per activation; main action can be attack or dash (second move)
+- Attack-first is allowed; opportunity attacks deferred
+- Activated units dim via alpha (including HP text)
+- Defeated units show the corpse frame (index 24) instead of fading
 - Key milestone-1 exclusions (no AI, no party builder, no shop/editor/upload, no animation system, no networking)
 
 ## Completed implementation
@@ -31,26 +35,30 @@ Initial Phaser project scaffolding is complete. The game now has a functional ba
    - `BattleScene.ts` - main gameplay with map, units, interaction
    - `ResultsScene.ts` - winner display and restart
 7. ✅ Fixed spritesheet loading (32x32 frames, display frame 0)
+8. ✅ Two-action economy: `hasUsedMovement` / `hasUsedMainAction`, dash support, action status UI
+9. ✅ In-world HP labels above units (current/max)
+10. ✅ Activation dimming and corpse frame on death
 
 ## Current state
 - Game loop is functional: unit selection → movement/attack → alternating activations → round end → winner determination
 - Units display correctly as single sprites (not full sheets)
-- Movement range highlighting (green) and attack targets (red) working
+- Movement range highlighting (green), dash range (blue), and attack targets (red) working
 - Objective control visual feedback (color changes based on controlling team, updated at round end; ties go neutral, uncontested holds)
-- UI displays round, active team, objective scores, and selected unit info
+- UI displays round, active team, objective scores, and selected unit info (action status included)
+- Units show HP labels above them; activated units are dimmed; defeated units display corpse frame
 
 ## Known issues / testing needed
 - Full gameplay loop needs end-to-end testing
 - Combat resolution needs playtesting for balance verification
 - Objective control scoring at round end needs validation (including contested neutral and uncontested hold behavior)
-- Edge cases: defeated units, tie scenarios, boundary conditions
+- Confirm corpse frame index is consistent across all spritesheets
 
 ## Immediate next steps
 1. Comprehensive gameplay testing (full match from start to finish)
 2. Validate combat formulas produce expected results
 3. Test objective control transitions between rounds
-4. Identify and fix any UX or visual issues
-5. Polish pass on UI/feedback (optional for MVC)
+4. Validate activation dimming resets correctly each round
+5. Optional: add HP color-coding for quick readability
 6. Document deployment process for Azure Static Web Apps (user handling separately)
 
 ## Implementation guidance

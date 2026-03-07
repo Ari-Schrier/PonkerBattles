@@ -20,15 +20,24 @@ export class MovementEngine {
     unit: Unit,
     occupiedPositions: Map<string, boolean>,
     mapWidth: number,
-    mapHeight: number
+    mapHeight: number,
+    options?: {
+      isWalkable?: (pos: Position) => boolean;
+      getMoveCost?: (pos: Position) => number;
+    }
   ): Position[] {
     const legalMoves: Position[] = [];
-    const visited = new Set<string>();
+    const visited = new Map<string, number>();
     const queue: { pos: Position; remainingMoves: number }[] = [];
+
+    const isWalkable = options?.isWalkable ?? (() => true);
+    const getMoveCost = options?.getMoveCost ?? (() => 1);
 
     const startKey = `${unit.position.x},${unit.position.y}`;
     queue.push({ pos: unit.position, remainingMoves: unit.stats.movementRange });
-    visited.add(startKey);
+    visited.set(startKey, unit.stats.movementRange);
+
+    const legalMoveKeys = new Set<string>();
 
     while (queue.length > 0) {
       const current = queue.shift()!;
@@ -43,27 +52,36 @@ export class MovementEngine {
 
       for (const neighbor of neighbors) {
         const key = `${neighbor.x},${neighbor.y}`;
-        
-        // Skip if already visited
-        if (visited.has(key)) continue;
 
         // Skip if out of bounds
         if (neighbor.x < 0 || neighbor.x >= mapWidth || neighbor.y < 0 || neighbor.y >= mapHeight) {
           continue;
         }
 
+        // Skip if not walkable
+        if (!isWalkable(neighbor)) continue;
+
         // Skip if occupied (can't move through units)
         if (occupiedPositions.has(key)) continue;
 
-        visited.add(key);
-
-        const moveCost = 1; // All terrain costs 1 for MVC
+        const moveCost = Math.max(1, getMoveCost(neighbor));
         const remainingAfterMove = current.remainingMoves - moveCost;
 
-        if (remainingAfterMove >= 0) {
-          legalMoves.push(neighbor);
+        if (remainingAfterMove < 0) {
+          continue;
+        }
 
-          if (remainingAfterMove > 0) {
+        // Add to legal moves once
+        if (!legalMoveKeys.has(key)) {
+          legalMoveKeys.add(key);
+          legalMoves.push(neighbor);
+        }
+
+        // Only explore further if we have remaining moves and this path is better
+        if (remainingAfterMove > 0) {
+          const bestRemaining = visited.get(key);
+          if (bestRemaining === undefined || remainingAfterMove > bestRemaining) {
+            visited.set(key, remainingAfterMove);
             queue.push({ pos: neighbor, remainingMoves: remainingAfterMove });
           }
         }

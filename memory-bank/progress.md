@@ -1,7 +1,7 @@
 # Progress
 
 ## Current status
-Phaser project scaffolding and core implementation complete. Game is in testable state with functional gameplay loop. Ready for comprehensive playtesting and polish.
+Core MVC gameplay loop is active with two-action economy, HP labels, and improved visual feedback (activation dimming and corpse frames). Ready for comprehensive playtesting and polish.
 
 ## Completed
 
@@ -40,11 +40,22 @@ Phaser project scaffolding and core implementation complete. Game is in testable
   - Click-based interaction (select, move, attack)
   - Movement range highlighting (green) and attack targets (red)
   - Turn progression and UI updates
+  - Two-action activation flow (movement + main action) with dash
+  - In-world HP labels above units
+  - Activation dimming (sprite + HP text)
+  - Corpse frame on unit defeat (index 24)
 - **ResultsScene.ts**: Winner announcement, color-coded results, click-to-restart
 
 ### Asset Integration
 - Fixed spritesheet loading issue: Changed from `load.image()` to `load.spritesheet()` with 32x32 frame configuration
 - Units now display as single sprites using `setFrame(0)`
+
+### Combat/Activation Updates (2026-03-06)
+- Implemented two-action economy (movement + main action), dash support, and action tracking
+- Fixed attack gating so units cannot repeat attacks after main action is used
+- Added HP labels that update on damage and move with units
+- Activation dimming for units that have acted; reset each round
+- Corpses shown via frame 24 instead of fading sprites
 
 ## Remaining (MVC milestone)
 
@@ -54,6 +65,7 @@ Phaser project scaffolding and core implementation complete. Game is in testable
 - Objective control scoring validation
 - Round progression edge cases
 - Winner determination in tie scenarios
+- Verify corpse frame index on all spritesheets
 
 ### Polish (Optional for MVC)
 - Visual feedback improvements
@@ -69,7 +81,7 @@ Phaser project scaffolding and core implementation complete. Game is in testable
 - Spritesheet loading: RESOLVED (using load.spritesheet with 32x32 frames)
 - Movement calculation may need optimization for larger maps (acceptable for 22x22)
 - Turn progression logic needs comprehensive testing
-- Defeated unit handling needs validation
+- Defeated unit handling needs validation (corpse frame index consistency)
 
 ## Technical debt / future considerations
 - Animation system (out of scope for MVC, but spritesheet structure supports it)
@@ -86,3 +98,4 @@ Phaser project scaffolding and core implementation complete. Game is in testable
 - 2026-03-02: All three Phaser scenes created
 - 2026-03-02: Spritesheet loading issue identified and fixed
 - 2026-03-02: Memory bank updated post-implementation
+- 2026-03-06: Added two-action economy, HP labels, activation dimming, and corpse frames; fixed attack repeat bug

@@ -34,10 +34,7 @@ export class CombatResolver {
       // Base damage equals attacker's attack bonus
       const baseDamage = attacker.stats.attackBonus;
       damage = Math.max(baseDamage - defender.stats.armor, GameConfig.MIN_DAMAGE);
-      
-      // Apply damage to defender
-      defender.stats.hp = Math.max(0, defender.stats.hp - damage);
-      targetDefeated = defender.stats.hp === 0;
+      targetDefeated = defender.stats.hp - damage <= 0;
     }
 
     return {

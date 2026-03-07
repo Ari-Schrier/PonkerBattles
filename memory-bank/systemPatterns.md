@@ -101,7 +101,9 @@ Central state object passed to TurnManager:
 {
   id, name, team, unitClass,
   spriteKey, stats, position,
-  hasActivated: boolean
+  hasActivated: boolean,
+  hasUsedMovement: boolean,
+  hasUsedMainAction: boolean
 }
 ```
 
@@ -110,8 +112,8 @@ Central state object passed to TurnManager:
 2. BattleScene validates adjacency via MovementEngine
 3. BattleScene calls CombatResolver.resolveAttack()
 4. CombatResolver rolls 2d10, calculates hit, applies damage
-5. BattleScene updates sprite (fade if defeated)
-6. TurnManager.activateUnit() marks unit as activated
+5. BattleScene updates sprite (corpse frame on defeat) and HP labels
+6. TurnManager.activateUnit() marks unit as activated and scene dims unit visuals
 7. ObjectiveController updates control status (round end; retains previous owner if uncontested, neutral on tie)
 8. BattleScene refreshes UI
 

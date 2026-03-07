@@ -8,9 +8,11 @@ import type { GameState, Unit } from './types';
 
 export class TurnManager {
   private gameState: GameState;
+  private onRoundEndCallback?: () => void;
 
-  constructor(gameState: GameState) {
+  constructor(gameState: GameState, onRoundEnd?: () => void) {
     this.gameState = gameState;
+    this.onRoundEndCallback = onRoundEnd;
   }
 
   /**
@@ -39,6 +41,26 @@ export class TurnManager {
    */
   activateUnit(unit: Unit): void {
     unit.hasActivated = true;
+  }
+
+  /**
+   * Complete a unit activation and advance turn flow
+   */
+  completeUnitActivation(unit: Unit): { roundEnded: boolean; gameEnded: boolean } {
+    this.activateUnit(unit);
+
+    const roundComplete = this.isRoundComplete();
+    if (roundComplete) {
+      this.handleRoundEnd();
+    }
+
+    const previousRound = this.gameState.currentRound;
+    this.nextTeam();
+    const roundEnded = this.gameState.currentRound !== previousRound;
+
+    const gameEnded = this.isGameOver();
+
+    return { roundEnded, gameEnded };
   }
 
   /**
@@ -103,6 +125,10 @@ export class TurnManager {
     } else {
       this.startNextRound();
     }
+  }
+
+  private handleRoundEnd(): void {
+    this.onRoundEndCallback?.();
   }
 
   /**
