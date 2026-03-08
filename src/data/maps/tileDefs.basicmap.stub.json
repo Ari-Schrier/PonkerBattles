@@ -1,0 +1,213 @@
+[
+  {
+    "gid": 1,
+    "terrainType": "land",
+    "layer": "ground",
+    "animationFrames": []
+  },
+  {
+    "gid": 2,
+    "terrainType": "land",
+    "layer": "ground",
+    "animationFrames": []
+  },
+  {
+    "gid": 3,
+    "terrainType": "land",
+    "layer": "ground",
+    "animationFrames": []
+  },
+  {
+    "gid": 28,
+    "terrainType": "land",
+    "layer": "ground",
+    "animationFrames": []
+  },
+  {
+    "gid": 29,
+    "terrainType": "land",
+    "layer": "ground",
+    "animationFrames": []
+  },
+  {
+    "gid": 30,
+    "terrainType": "land",
+    "layer": "ground",
+    "animationFrames": []
+  },
+  {
+    "gid": 55,
+    "terrainType": "land",
+    "layer": "ground",
+    "animationFrames": []
+  },
+  {
+    "gid": 56,
+    "terrainType": "land",
+    "layer": "ground",
+    "animationFrames": []
+  },
+  {
+    "gid": 57,
+    "terrainType": "land",
+    "layer": "ground",
+    "animationFrames": []
+  },
+  {
+    "gid": 115,
+    "terrainType": "land",
+    "layer": "overlay",
+    "animationFrames": []
+  },
+  {
+    "gid": 120,
+    "terrainType": "cliff",
+    "layer": "overlay",
+    "animationFrames": []
+  },
+  {
+    "gid": 121,
+    "terrainType": "cliff",
+    "layer": "overlay",
+    "animationFrames": []
+  },
+  {
+    "gid": 122,
+    "terrainType": "cliff",
+    "layer": "overlay",
+    "animationFrames": []
+  },
+  {
+    "gid": 123,
+    "terrainType": "cliff",
+    "layer": "overlay",
+    "animationFrames": []
+  },
+  {
+    "gid": 124,
+    "terrainType": "cliff",
+    "layer": "overlay",
+    "animationFrames": []
+  },
+    {
+    "gid": 125,
+    "terrainType": "land",
+    "layer": "overlay",
+    "animationFrames": []
+  },
+  {
+    "gid": 136,
+    "terrainType": "cliff",
+    "layer": "overlay",
+    "animationFrames": []
+  },
+  {
+    "gid": 138,
+    "terrainType": "cliff",
+    "layer": "overlay",
+    "animationFrames": []
+  },
+  {
+    "gid": 163,
+    "terrainType": "cliff",
+    "layer": "overlay",
+    "animationFrames": []
+  },
+  {
+    "gid": 164,
+    "terrainType": "cliff",
+    "layer": "overlay",
+    "animationFrames": []
+  },
+  {
+    "gid": 165,
+    "terrainType": "cliff",
+    "layer": "overlay",
+    "animationFrames": []
+  },
+  {
+    "gid": 169,
+    "terrainType": "land",
+    "layer": "overlay",
+    "animationFrames": []
+  },
+  {
+    "gid": 174,
+    "terrainType": "cliff",
+    "layer": "overlay",
+    "animationFrames": []
+  },
+  {
+    "gid": 175,
+    "terrainType": "cliff",
+    "layer": "overlay",
+    "animationFrames": []
+  },
+  {
+    "gid": 176,
+    "terrainType": "cliff",
+    "layer": "overlay",
+    "animationFrames": []
+  },
+  {
+    "gid": 279,
+    "terrainType": "water",
+    "layer": "ground",
+    "animationFrames": []
+  },
+  {
+    "gid": 281,
+    "terrainType": "water",
+    "layer": "ground",
+    "animationFrames": []
+  },
+  {
+    "gid": 282,
+    "terrainType": "water",
+    "layer": "ground",
+    "animationFrames": []
+  },
+  {
+    "gid": 305,
+    "terrainType": "water",
+    "layer": "ground",
+    "animationFrames": []
+  },
+  {
+    "gid": 307,
+    "terrainType": "water",
+    "layer": "ground",
+    "animationFrames": []
+  },
+  {
+    "gid": 308,
+    "terrainType": "water",
+    "layer": "ground",
+    "animationFrames": []
+  },
+  {
+    "gid": 309,
+    "terrainType": "water",
+    "layer": "ground",
+    "animationFrames": []
+  },
+  {
+    "gid": 333,
+    "terrainType": "water",
+    "layer": "ground",
+    "animationFrames": []
+  },
+  {
+    "gid": 387,
+    "terrainType": "water",
+    "layer": "ground",
+    "animationFrames": []
+  },
+  {
+    "gid": 708,
+    "terrainType": "land",
+    "layer": "overlay",
+    "objectiveMarker": true,
+    "animationFrames": []
+  }
+]

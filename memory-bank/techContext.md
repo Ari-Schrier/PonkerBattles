@@ -16,7 +16,7 @@
 - Design documentation: `Design Docs/Tactics Game.pdf`
 - Art assets: `assets/` directory
   - Character spritesheets: 32x32 frames, 29 columns × 8 rows (Hunter, Soldier, Thief in Blue/Red variants)
-  - Tileset: `world.png` (32x32 tiles, 10×10 grid = 100 tiles)
+- Tileset: `world.png` (16x16 tiles, 27×65 grid = 1755 tiles; punyworld overworld set)
 
 ## Technical constraints
 - Keep rules values editable via centralized config (`gameConfig.ts`)
@@ -60,11 +60,10 @@ src/
 - Dev server on port 3000
 - Code splitting: Phaser in separate chunk
 - Asset handling: images, JSON, tilemaps
-
-### Spritesheet Loading
+## Spritesheet Loading
 - **Method**: `load.spritesheet()` with frame configuration
 - **Frame size**: 32×32 pixels
-- **Display size**: 32×32 pixels
+- **Display size**: Derived from `GameConfig.TILE_SIZE` for readability (map tiles scaled from 16px source tiles)
 - **Frame display**: Frame 0 only for MVC (no animation)
 
 ### Data Format Choices
@@ -81,7 +80,7 @@ src/
 User handling Azure Static Web Apps deployment separately (no GitHub Actions workflow included in scaffold).
 
 ## Performance considerations
-- 22×22 map = 484 tiles (well within Phaser limits)
+- 25×25 map = 625 tiles (well within Phaser limits)
 - 6 units total (minimal sprite count)
 - No animations in MVC (reduces draw calls)
 - Flood-fill movement calculation is O(n) where n = reachable tiles (acceptable for this scale)

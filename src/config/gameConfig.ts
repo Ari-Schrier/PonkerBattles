@@ -21,8 +21,8 @@ export const GameConfig = {
   
   // Map and rendering
   TILE_SIZE: 32, // pixels
-  MAP_WIDTH: 22, // tiles
-  MAP_HEIGHT: 22, // tiles
+  MAP_WIDTH: 25, // tiles (BasicMap.tmj)
+  MAP_HEIGHT: 25, // tiles (BasicMap.tmj)
   
   // Turn phases
   PHASES: {

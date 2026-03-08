@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { describe, expect, it, vi, afterEach } from 'vitest';
 import { CombatResolver } from './CombatResolver';
 import { GameConfig } from '@config/gameConfig';
 import type { Unit } from './types';

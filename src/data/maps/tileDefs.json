@@ -1,0 +1,26 @@
+[
+  {
+    "gid": 1,
+    "terrainType": "land",
+    "layer": "ground",
+    "animationFrames": []
+  },
+  {
+    "gid": 2,
+    "terrainType": "water",
+    "layer": "ground",
+    "animationFrames": []
+  },
+  {
+    "gid": 3,
+    "terrainType": "forest",
+    "layer": "overlay",
+    "animationFrames": []
+  },
+  {
+    "gid": 4,
+    "terrainType": "cliff",
+    "layer": "overlay",
+    "animationFrames": []
+  }
+]

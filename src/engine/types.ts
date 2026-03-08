@@ -39,6 +39,22 @@ export interface Tile {
   occupant: Unit | null;
 }
 
+export interface TileAnimationFrame {
+  frame: number;
+  duration: number;
+}
+
+export type TerrainCategory = 'land' | 'forest' | 'cliff' | 'water';
+export type TerrainLayer = 'ground' | 'overlay';
+
+export interface TileDefinition {
+  gid: number;
+  terrainType: TerrainCategory;
+  layer: TerrainLayer;
+  objectiveMarker?: boolean;
+  animationFrames?: TileAnimationFrame[];
+}
+
 export interface Objective {
   id: string;
   position: Position;
@@ -102,4 +118,16 @@ export interface TilesetData {
   imagewidth: number;
   imageheight: number;
   image: string;
+}
+
+export interface MapDefinition {
+  width: number;
+  height: number;
+  tilewidth: number;
+  tileheight: number;
+  groundLayer: number[];
+  overlayLayer: number[];
+  tileDefs: TileDefinition[];
+  objectives: Objective[];
+  spawnPoints: MapObject[];
 }

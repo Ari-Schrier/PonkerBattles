@@ -3,7 +3,7 @@
  * Manages game phases, turn order, and round progression
  */
 
-import { GameConfig, type Team, type Phase } from '@config/gameConfig';
+import { GameConfig, type Team } from '@config/gameConfig';
 import type { GameState, Unit } from './types';
 
 export class TurnManager {

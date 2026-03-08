@@ -1,7 +1,7 @@
 # Progress
 
 ## Current status
-Core MVC gameplay loop is active with two-action economy, HP labels, and improved visual feedback (activation dimming and corpse frames). Ready for comprehensive playtesting and polish.
+Core MVC gameplay loop is active with two-action economy, HP labels, and improved visual feedback (activation dimming and corpse frames). Map pipeline now loads BasicMap.tmj with explicit tileDefs mapping and configurable render scale.
 
 ## Completed
 
@@ -50,6 +50,14 @@ Core MVC gameplay loop is active with two-action economy, HP labels, and improve
 - Fixed spritesheet loading issue: Changed from `load.image()` to `load.spritesheet()` with 32x32 frame configuration
 - Units now display as single sprites using `setFrame(0)`
 
+### Map Pipeline Updates (2026-03-08)
+- Added BasicMap.tmj (25x25, Tile Layer 1/2) as default map load
+- Generated `tileDefs.basicmap.stub.json` with explicit gid mappings and objective marker gid 708
+- Updated MapLoader to accept Tile Layer 1/2 and extract objectives from marker gids
+- Patched BasicMap tileset metadata to reference `assets/tilesets/world.png` (16x16 tiles)
+- Rendering scale now derived from `GameConfig.TILE_SIZE` (tilemap layers scale from 16px source tiles)
+- GameConfig updated to match BasicMap map dimensions and configurable tile size
+
 ### Combat/Activation Updates (2026-03-06)
 - Implemented two-action economy (movement + main action), dash support, and action tracking
 - Fixed attack gating so units cannot repeat attacks after main action is used
@@ -66,6 +74,8 @@ Core MVC gameplay loop is active with two-action economy, HP labels, and improve
 - Round progression edge cases
 - Winner determination in tie scenarios
 - Verify corpse frame index on all spritesheets
+- Validate BasicMap objective marker placements and terrain mappings
+- Finalize terrain categories in `tileDefs.basicmap.stub.json`
 
 ### Polish (Optional for MVC)
 - Visual feedback improvements
@@ -99,3 +109,4 @@ Core MVC gameplay loop is active with two-action economy, HP labels, and improve
 - 2026-03-02: Spritesheet loading issue identified and fixed
 - 2026-03-02: Memory bank updated post-implementation
 - 2026-03-06: Added two-action economy, HP labels, activation dimming, and corpse frames; fixed attack repeat bug
+- 2026-03-08: Integrated BasicMap.tmj, generated tileDefs stub, added objective marker parsing, and made render scale configurable via TILE_SIZE

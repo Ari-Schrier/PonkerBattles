@@ -5,14 +5,17 @@
 
 import Phaser from 'phaser';
 import { GameConfig } from '@config/gameConfig';
-import type { Unit, GameState, Objective, Position } from '@engine/types';
+import type { Unit, GameState, Objective, Position, MapData, MapDefinition, TileDefinition, TerrainCategory } from '@engine/types';
 import { TurnManager } from '@engine/TurnManager';
 import { MovementEngine } from '@engine/MovementEngine';
 import { CombatResolver } from '@engine/CombatResolver';
 import { ObjectiveController } from '@engine/ObjectiveController';
+import { MapLoader } from '@data/maps/MapLoader';
 
 export class BattleScene extends Phaser.Scene {
   private map!: Phaser.Tilemaps.Tilemap;
+  private mapDefinition!: MapDefinition;
+  private tileDefLookup: Map<number, TileDefinition> = new Map();
   private gameState!: GameState;
   private turnManager!: TurnManager;
   private unitSprites: Map<string, Phaser.GameObjects.Image> = new Map();
@@ -27,13 +30,21 @@ export class BattleScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.cameras.main.setRoundPixels(true);
+
     // Create tilemap
-    this.map = this.make.tilemap({ key: 'map01' });
-    const tileset = this.map.addTilesetImage('world', 'world-tileset');
+    this.map = this.make.tilemap({ key: 'basicMap' });
+    const tileset = this.map.addTilesetImage('punyworld-overworld-tileset', 'world-tileset');
     
     if (tileset) {
-      this.map.createLayer('Ground', tileset, 0, 0);
+      const groundLayer = this.map.createLayer('Tile Layer 1', tileset, 0, 0);
+      const overlayLayer = this.map.createLayer('Tile Layer 2', tileset, 0, 0);
+      const scale = GameConfig.TILE_SIZE / this.map.tileWidth;
+      groundLayer?.setScale(scale);
+      overlayLayer?.setScale(scale);
     }
+
+    this.mapDefinition = this.loadMapDefinition();
 
     // Initialize game state
     this.initializeGameState();
@@ -67,7 +78,6 @@ export class BattleScene extends Phaser.Scene {
   private initializeGameState(): void {
     const blueTeamData = this.cache.json.get('blueTeam');
     const redTeamData = this.cache.json.get('redTeam');
-    const objectivesData = this.cache.json.get('objectives');
 
     // Create units
     const units: Unit[] = [];
@@ -88,9 +98,9 @@ export class BattleScene extends Phaser.Scene {
     });
 
     // Create objectives
-    const objectives: Objective[] = objectivesData.map((objData: any) => ({
-      id: objData.id,
-      position: { ...objData.position },
+    const objectives: Objective[] = this.mapDefinition.objectives.map(obj => ({
+      id: obj.id,
+      position: { ...obj.position },
       controlledBy: null
     }));
 
@@ -110,10 +120,11 @@ export class BattleScene extends Phaser.Scene {
       const y = objective.position.y * GameConfig.TILE_SIZE + GameConfig.TILE_SIZE / 2;
       
       const graphics = this.add.graphics();
+      const radius = GameConfig.TILE_SIZE * 0.2;
       graphics.lineStyle(2, 0xffff00, 1);
-      graphics.strokeCircle(x, y, 12);
+      graphics.strokeCircle(x, y, radius);
       graphics.fillStyle(0xffff00, 0.3);
-      graphics.fillCircle(x, y, 12);
+      graphics.fillCircle(x, y, radius);
       
       this.objectiveSprites.push(graphics);
     });
@@ -133,8 +144,8 @@ export class BattleScene extends Phaser.Scene {
       this.unitSprites.set(unit.id, sprite);
 
       // Create health text above unit
-      const healthText = this.add.text(x, y - 20, `${unit.stats.hp}/${unit.stats.maxHp}`, {
-        fontSize: '12px',
+      const healthText = this.add.text(x, y - GameConfig.TILE_SIZE * 0.4, `${unit.stats.hp}/${unit.stats.maxHp}`, {
+        fontSize: `${Math.max(12, Math.round(GameConfig.TILE_SIZE * 0.25))}px`,
         color: '#ffffff',
         backgroundColor: '#000000',
         padding: { x: 2, y: 2 }
@@ -147,7 +158,7 @@ export class BattleScene extends Phaser.Scene {
 
   private createUI(): void {
     this.uiText = this.add.text(10, 10, '', {
-      fontSize: '16px',
+      fontSize: `${Math.max(14, Math.round(GameConfig.TILE_SIZE * 0.25))}px`,
       color: '#ffffff',
       backgroundColor: '#000000',
       padding: { x: 10, y: 10 }
@@ -266,8 +277,9 @@ export class BattleScene extends Phaser.Scene {
       const legalMoves = MovementEngine.getLegalMoves(
         unit,
         occupiedPositions,
-        GameConfig.MAP_WIDTH,
-        GameConfig.MAP_HEIGHT
+        this.mapDefinition.width,
+        this.mapDefinition.height,
+        this.getMovementOptions()
       );
 
       // Green highlights for normal movement
@@ -284,8 +296,9 @@ export class BattleScene extends Phaser.Scene {
       const dashMoves = MovementEngine.getLegalMoves(
         unit,
         occupiedPositions,
-        GameConfig.MAP_WIDTH,
-        GameConfig.MAP_HEIGHT
+        this.mapDefinition.width,
+        this.mapDefinition.height,
+        this.getMovementOptions()
       );
 
       // Blue highlights for dash movement
@@ -325,8 +338,9 @@ export class BattleScene extends Phaser.Scene {
     const legalMoves = MovementEngine.getLegalMoves(
       unit,
       occupiedPositions,
-      GameConfig.MAP_WIDTH,
-      GameConfig.MAP_HEIGHT
+      this.mapDefinition.width,
+      this.mapDefinition.height,
+      this.getMovementOptions()
     );
 
     const isLegal = legalMoves.some(pos => pos.x === targetPos.x && pos.y === targetPos.y);
@@ -349,7 +363,7 @@ export class BattleScene extends Phaser.Scene {
 
       const healthText = this.healthTexts.get(unit.id);
       if (healthText) {
-        healthText.setPosition(newX, newY - 20);
+        healthText.setPosition(newX, newY - GameConfig.TILE_SIZE * 0.4);
       }
 
       // Mark appropriate action as used
@@ -484,9 +498,10 @@ export class BattleScene extends Phaser.Scene {
       }
       
       graphics.lineStyle(2, color, 1);
-      graphics.strokeCircle(x, y, 12);
-      graphics.fillStyle(color, 0.3);
-      graphics.fillCircle(x, y, 12);
+      const radius = GameConfig.TILE_SIZE * 0.2;
+      graphics.strokeCircle(x, y, radius);
+      graphics.fillStyle(0xffff00, 0.3);
+      graphics.fillCircle(x, y, radius);
     });
   }
 
@@ -499,5 +514,79 @@ export class BattleScene extends Phaser.Scene {
   private endGame(): void {
     this.gameState.winner = ObjectiveController.determineWinner(this.gameState.objectives);
     this.scene.start('ResultsScene', { winner: this.gameState.winner });
+  }
+
+  private loadMapDefinition(): MapDefinition {
+    const cachedMap = this.cache.tilemap.get('basicMap') as unknown;
+    const mapData = this.extractMapData(cachedMap);
+    const tileDefs = this.cache.json.get('tileDefs') as TileDefinition[] | undefined;
+
+    if (!tileDefs) {
+      throw new Error('Tile definitions failed to load.');
+    }
+
+    const mapDefinition = MapLoader.fromTiledJson(mapData, tileDefs);
+
+    this.tileDefLookup.clear();
+    tileDefs.forEach(def => this.tileDefLookup.set(def.gid, def));
+
+    return mapDefinition;
+  }
+
+  private extractMapData(cachedMap: unknown): MapData {
+    if (cachedMap && typeof cachedMap === 'object') {
+      if ('layers' in cachedMap) {
+        return cachedMap as MapData;
+      }
+      if ('data' in cachedMap && cachedMap.data && typeof cachedMap.data === 'object' && 'layers' in cachedMap.data) {
+        return cachedMap.data as MapData;
+      }
+    }
+
+    throw new Error('Map data is missing or invalid.');
+  }
+
+  private getMovementOptions(): { isWalkable?: (pos: Position) => boolean; getMoveCost?: (pos: Position) => number } {
+    return {
+      isWalkable: pos => {
+        const def = this.getLogicalTileDef(pos);
+        if (!def) {
+          return true;
+        }
+        return this.isWalkable(def.terrainType);
+      },
+      getMoveCost: pos => {
+        const def = this.getLogicalTileDef(pos);
+        if (!def) {
+          return 1;
+        }
+        return this.getMoveCost(def.terrainType);
+      }
+    };
+  }
+
+  private getLogicalTileDef(pos: Position): TileDefinition | undefined {
+    const index = pos.y * this.mapDefinition.width + pos.x;
+    const overlayGid = this.mapDefinition.overlayLayer[index];
+    const groundGid = this.mapDefinition.groundLayer[index];
+    const gid = overlayGid && overlayGid !== 0 ? overlayGid : groundGid;
+    return gid ? this.tileDefLookup.get(gid) : undefined;
+  }
+
+  private isWalkable(category: TerrainCategory): boolean {
+    return category === 'land' || category === 'forest';
+  }
+
+  private getMoveCost(category: TerrainCategory): number {
+    switch (category) {
+      case 'forest':
+        return 2;
+      case 'cliff':
+      case 'water':
+        return Number.POSITIVE_INFINITY;
+      case 'land':
+      default:
+        return 1;
+    }
   }
 }

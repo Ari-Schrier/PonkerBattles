@@ -15,6 +15,9 @@ const config: Phaser.Types.Core.GameConfig = {
   height: GameConfig.MAP_HEIGHT * GameConfig.TILE_SIZE,
   parent: 'game-container',
   backgroundColor: '#1a1a1a',
+  pixelArt: true,
+  antialias: false,
+  roundPixels: true,
   scene: [PreloadScene, BattleScene, ResultsScene],
   physics: {
     default: 'arcade',

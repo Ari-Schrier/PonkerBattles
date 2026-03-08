@@ -69,12 +69,12 @@ export class PreloadScene extends Phaser.Scene {
     });
 
     // Load map data
-    this.load.tilemapTiledJSON('map01', 'src/data/maps/map01.json');
+    this.load.tilemapTiledJSON('basicMap', new URL('../data/maps/BasicMap.tmj', import.meta.url).href);
+    this.load.json('tileDefs', new URL('../data/maps/tileDefs.basicmap.stub.json', import.meta.url).href);
 
     // Load unit data
-    this.load.json('blueTeam', 'src/data/units/blueTeam.json');
-    this.load.json('redTeam', 'src/data/units/redTeam.json');
-    this.load.json('objectives', 'src/data/objectives.json');
+    this.load.json('blueTeam', new URL('../data/units/blueTeam.json', import.meta.url).href);
+    this.load.json('redTeam', new URL('../data/units/redTeam.json', import.meta.url).href);
   }
 
   create(): void {
