@@ -24,6 +24,16 @@ export const GameConfig = {
   MAP_WIDTH: 25, // tiles (BasicMap.tmj)
   MAP_HEIGHT: 25, // tiles (BasicMap.tmj)
   
+  // Animation timing
+  ANIMATION_FRAME_RATES: {
+    WALK: 10,
+    ATTACK: 10,
+    DAMAGE: 10,
+    DEATH: 8,
+    IDLE: 1
+  },
+  MOVEMENT_DURATION_MS: 600,
+  
   // Turn phases
   PHASES: {
     SETUP: 'setup',

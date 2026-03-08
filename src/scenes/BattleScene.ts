@@ -11,6 +11,7 @@ import { MovementEngine } from '@engine/MovementEngine';
 import { CombatResolver } from '@engine/CombatResolver';
 import { ObjectiveController } from '@engine/ObjectiveController';
 import { MapLoader } from '@data/maps/MapLoader';
+import { AnimationManager } from '@engine/AnimationManager';
 
 export class BattleScene extends Phaser.Scene {
   private map!: Phaser.Tilemaps.Tilemap;
@@ -18,7 +19,7 @@ export class BattleScene extends Phaser.Scene {
   private tileDefLookup: Map<number, TileDefinition> = new Map();
   private gameState!: GameState;
   private turnManager!: TurnManager;
-  private unitSprites: Map<string, Phaser.GameObjects.Image> = new Map();
+  private unitSprites: Map<string, Phaser.GameObjects.Sprite> = new Map();
   private healthTexts: Map<string, Phaser.GameObjects.Text> = new Map();
   private objectiveSprites: Phaser.GameObjects.Graphics[] = [];
   private selectedUnit: Unit | null = null;
@@ -91,6 +92,7 @@ export class BattleScene extends Phaser.Scene {
         spriteKey: unitData.spriteKey,
         stats: { ...unitData.stats },
         position: { ...unitData.startPosition },
+        currentDirection: 0, // Default to facing down
         hasActivated: false,
         hasUsedMovement: false,
         hasUsedMainAction: false
@@ -135,11 +137,13 @@ export class BattleScene extends Phaser.Scene {
       const x = unit.position.x * GameConfig.TILE_SIZE + GameConfig.TILE_SIZE / 2;
       const y = unit.position.y * GameConfig.TILE_SIZE + GameConfig.TILE_SIZE / 2;
       
-      const sprite = this.add.image(x, y, unit.spriteKey);
-      sprite.setFrame(0); // Display first frame of spritesheet
+      const sprite = this.add.sprite(x, y, unit.spriteKey);
       sprite.setDisplaySize(GameConfig.TILE_SIZE, GameConfig.TILE_SIZE);
       sprite.setData('unit', unit);
       sprite.disableInteractive();
+      
+      // Show idle animation for initial direction
+      AnimationManager.playAnimation(sprite, unit.spriteKey, 'idle', unit.currentDirection);
       
       this.unitSprites.set(unit.id, sprite);
 
@@ -346,43 +350,121 @@ export class BattleScene extends Phaser.Scene {
     const isLegal = legalMoves.some(pos => pos.x === targetPos.x && pos.y === targetPos.y);
 
     if (isLegal) {
+      // Find path from current position to target
+      const path = MovementEngine.findPath(
+        unit.position,
+        targetPos,
+        occupiedPositions,
+        this.mapDefinition.width,
+        this.mapDefinition.height,
+        this.getMovementOptions()
+      );
+
+      if (!path || path.length === 0) {
+        console.warn('No path found to destination');
+        return;
+      }
+
       // Determine if this is normal movement or dash
       const isDash = unit.hasUsedMovement && !unit.hasUsedMainAction;
       
-      // Move unit
-      unit.position = targetPos;
-      
-      // Update sprite and health text position
-      const newX = targetPos.x * GameConfig.TILE_SIZE + GameConfig.TILE_SIZE / 2;
-      const newY = targetPos.y * GameConfig.TILE_SIZE + GameConfig.TILE_SIZE / 2;
-      
+      // Get sprite and health text
       const sprite = this.unitSprites.get(unit.id);
-      if (sprite) {
-        sprite.setPosition(newX, newY);
-      }
-
       const healthText = this.healthTexts.get(unit.id);
-      if (healthText) {
-        healthText.setPosition(newX, newY - GameConfig.TILE_SIZE * 0.4);
+      
+      if (!sprite) {
+        return;
       }
 
-      // Mark appropriate action as used
-      if (isDash) {
-        unit.hasUsedMainAction = true;
-      } else {
-        unit.hasUsedMovement = true;
-      }
+      // Clear highlights during movement
+      this.highlightGraphics.clear();
+      
+      // Animate along the path
+      this.animateAlongPath(unit, path, sprite, healthText, () => {
+        // Movement complete
+        // Update unit position in game state
+        unit.position = targetPos;
+        
+        // Mark appropriate action as used
+        if (isDash) {
+          unit.hasUsedMainAction = true;
+        } else {
+          unit.hasUsedMovement = true;
+        }
 
-
-      // Check if unit's turn is complete
-      if (this.isUnitTurnComplete(unit)) {
-        this.endUnitActivation(unit);
-      } else {
-        // Re-highlight available actions
-        this.showMovementRange(unit);
-        this.updateUI();
-      }
+        // Check if unit's turn is complete
+        if (this.isUnitTurnComplete(unit)) {
+          this.endUnitActivation(unit);
+        } else {
+          // Re-highlight available actions
+          this.showMovementRange(unit);
+          this.updateUI();
+        }
+      });
     }
+  }
+
+  /**
+   * Animate a unit moving along a path, segment by segment
+   */
+  private animateAlongPath(
+    unit: Unit,
+    path: Position[],
+    sprite: Phaser.GameObjects.Sprite,
+    healthText: Phaser.GameObjects.Text | undefined,
+    onComplete: () => void
+  ): void {
+    // Path includes the starting position, so we start from index 1
+    let currentIndex = 1;
+
+    const animateNextSegment = () => {
+      if (currentIndex >= path.length) {
+        // Path complete - show idle animation
+        AnimationManager.playAnimation(sprite, unit.spriteKey, 'idle', unit.currentDirection);
+        onComplete();
+        return;
+      }
+
+      const from = path[currentIndex - 1];
+      const to = path[currentIndex];
+
+      // Calculate direction for this segment
+      const direction = AnimationManager.getDirection(from, to);
+      unit.currentDirection = direction;
+
+      // Play walk animation in the new direction
+      AnimationManager.playAnimation(sprite, unit.spriteKey, 'walk', direction);
+
+      // Calculate target position in pixels
+      const targetX = to.x * GameConfig.TILE_SIZE + GameConfig.TILE_SIZE / 2;
+      const targetY = to.y * GameConfig.TILE_SIZE + GameConfig.TILE_SIZE / 2;
+
+      // Tween sprite to next position
+      this.tweens.add({
+        targets: sprite,
+        x: targetX,
+        y: targetY,
+        duration: GameConfig.MOVEMENT_DURATION_MS,
+        ease: 'Linear',
+        onComplete: () => {
+          currentIndex++;
+          animateNextSegment();
+        }
+      });
+
+      // Tween health text alongside sprite
+      if (healthText) {
+        this.tweens.add({
+          targets: healthText,
+          x: targetX,
+          y: targetY - GameConfig.TILE_SIZE * 0.4,
+          duration: GameConfig.MOVEMENT_DURATION_MS,
+          ease: 'Linear'
+        });
+      }
+    };
+
+    animateNextSegment();
   }
 
   private attemptAttack(attacker: Unit, defender: Unit): void {
@@ -391,45 +473,106 @@ export class BattleScene extends Phaser.Scene {
     }
 
     if (MovementEngine.isAdjacent(attacker.position, defender.position)) {
-      const result = CombatResolver.resolveAttack(attacker, defender);
+      // Calculate direction from attacker to defender
+      const direction = AnimationManager.getDirection(attacker.position, defender.position);
+      attacker.currentDirection = direction;
       
-      console.log(`${attacker.name} attacks ${defender.name}: ${result.hit ? 'HIT' : 'MISS'}${result.hit ? ` for ${result.damage} damage` : ''}`);
-
-      if (result.hit) {
-        defender.stats.hp = Math.max(0, defender.stats.hp - result.damage);
+      const attackerSprite = this.unitSprites.get(attacker.id);
+      const defenderSprite = this.unitSprites.get(defender.id);
+      
+      if (!attackerSprite || !defenderSprite) {
+        return;
       }
 
-      // Update defender's health text
-      const defenderHealthText = this.healthTexts.get(defender.id);
-      if (defenderHealthText) {
-        defenderHealthText.setText(`${defender.stats.hp}/${defender.stats.maxHp}`);
-      }
+      // Clear highlights during combat
+      this.highlightGraphics.clear();
+      
+      // Play attack animation on attacker
+      AnimationManager.playAnimation(attackerSprite, attacker.spriteKey, 'attack', direction);
+      
+      // Wait for attack animation to complete, then resolve combat
+      attackerSprite.once('animationcomplete', () => {
+        // Resolve combat
+        const result = CombatResolver.resolveAttack(attacker, defender);
+        
+        console.log(`${attacker.name} attacks ${defender.name}: ${result.hit ? 'HIT' : 'MISS'}${result.hit ? ` for ${result.damage} damage` : ''}`);
 
-      if (result.targetDefeated) {
-        // Show corpse frame for defeated unit
-        const sprite = this.unitSprites.get(defender.id);
-        if (sprite) {
-          sprite.setFrame(24);
-          sprite.setAlpha(1);
-          sprite.disableInteractive();
+        if (result.hit) {
+          defender.stats.hp = Math.max(0, defender.stats.hp - result.damage);
+          
+          // Update defender's health text
+          const defenderHealthText = this.healthTexts.get(defender.id);
+          if (defenderHealthText) {
+            defenderHealthText.setText(`${defender.stats.hp}/${defender.stats.maxHp}`);
+          }
+
+          // Calculate defender's direction (face attacker)
+          const defenderDirection = AnimationManager.getDirection(defender.position, attacker.position);
+          defender.currentDirection = defenderDirection;
+
+          if (result.targetDefeated) {
+            // Play death animation
+            AnimationManager.playAnimation(defenderSprite, defender.spriteKey, 'death', defenderDirection);
+            
+            // Wait for death animation to complete
+            defenderSprite.once('animationcomplete', () => {
+              // Death animation complete, attacker returns to idle
+              AnimationManager.playAnimation(attackerSprite, attacker.spriteKey, 'idle', direction);
+              
+              // Mark main action as used
+              attacker.hasUsedMainAction = true;
+
+              // Check if unit's turn is complete
+              if (this.isUnitTurnComplete(attacker)) {
+                this.endUnitActivation(attacker);
+              } else {
+                // Re-highlight available actions
+                this.showMovementRange(attacker);
+                this.updateUI();
+              }
+            });
+          } else {
+            // Play damage animation on defender
+            AnimationManager.playAnimation(defenderSprite, defender.spriteKey, 'damage', defenderDirection);
+            
+            // Wait for damage animation to complete
+            defenderSprite.once('animationcomplete', () => {
+              // Return defender to idle
+              AnimationManager.playAnimation(defenderSprite, defender.spriteKey, 'idle', defenderDirection);
+              
+              // Return attacker to idle
+              AnimationManager.playAnimation(attackerSprite, attacker.spriteKey, 'idle', direction);
+              
+              // Mark main action as used
+              attacker.hasUsedMainAction = true;
+
+              // Check if unit's turn is complete
+              if (this.isUnitTurnComplete(attacker)) {
+                this.endUnitActivation(attacker);
+              } else {
+                // Re-highlight available actions
+                this.showMovementRange(attacker);
+                this.updateUI();
+              }
+            });
+          }
+        } else {
+          // Miss - just return attacker to idle
+          AnimationManager.playAnimation(attackerSprite, attacker.spriteKey, 'idle', direction);
+          
+          // Mark main action as used
+          attacker.hasUsedMainAction = true;
+
+          // Check if unit's turn is complete
+          if (this.isUnitTurnComplete(attacker)) {
+            this.endUnitActivation(attacker);
+          } else {
+            // Re-highlight available actions
+            this.showMovementRange(attacker);
+            this.updateUI();
+          }
         }
-        if (defenderHealthText) {
-          defenderHealthText.setAlpha(1);
-        }
-      }
-
-
-      // Mark main action as used
-      attacker.hasUsedMainAction = true;
-
-      // Check if unit's turn is complete
-      if (this.isUnitTurnComplete(attacker)) {
-        this.endUnitActivation(attacker);
-      } else {
-        // Re-highlight available actions
-        this.showMovementRange(attacker);
-        this.updateUI();
-      }
+      });
     }
   }
 

@@ -4,6 +4,8 @@
  */
 
 import Phaser from 'phaser';
+import { AnimationManager } from '@engine/AnimationManager';
+import { GameConfig } from '@config/gameConfig';
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -78,6 +80,28 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create(): void {
+    // Create animations for all character spritesheets
+    const spriteKeys = [
+      'hunter-blue',
+      'hunter-red',
+      'soldier-blue',
+      'soldier-red',
+      'thief-blue',
+      'thief-red'
+    ];
+
+    const frameRates = {
+      walk: GameConfig.ANIMATION_FRAME_RATES.WALK,
+      attack: GameConfig.ANIMATION_FRAME_RATES.ATTACK,
+      damage: GameConfig.ANIMATION_FRAME_RATES.DAMAGE,
+      death: GameConfig.ANIMATION_FRAME_RATES.DEATH,
+      idle: GameConfig.ANIMATION_FRAME_RATES.IDLE
+    };
+
+    spriteKeys.forEach(key => {
+      AnimationManager.createAnimationsForSprite(this, key, frameRates);
+    });
+
     // Transition to battle scene
     this.scene.start('BattleScene');
   }

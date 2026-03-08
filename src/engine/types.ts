@@ -26,6 +26,7 @@ export interface Unit {
   spriteKey: string;
   stats: UnitStats;
   position: Position;
+  currentDirection: number; // 0-7: 0=down, 1=down-right, 2=right, 3=up-right, 4=up, 5=up-left, 6=left, 7=down-left
   hasActivated: boolean;
   hasUsedMovement: boolean;
   hasUsedMainAction: boolean;
