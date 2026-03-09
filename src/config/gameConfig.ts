@@ -32,7 +32,9 @@ export const GameConfig = {
     DEATH: 8,
     IDLE: 1
   },
-  MOVEMENT_DURATION_MS: 600,
+  MOVEMENT_DURATION_MS: 300,
+  DODGE_OFFSET_PIXELS: 12,
+  DODGE_DURATION_MS: 100,
   
   // Turn phases
   PHASES: {

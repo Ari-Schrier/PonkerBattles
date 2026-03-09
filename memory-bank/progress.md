@@ -1,7 +1,7 @@
 # Progress
 
 ## Current status
-Core MVC gameplay loop is active with two-action economy, HP labels, and improved visual feedback (activation dimming and corpse frames). Map pipeline now loads BasicMap.tmj with explicit tileDefs mapping and configurable render scale.
+Core MVC gameplay loop now includes full animation support, A* path-based movement, dodge feedback on misses, and attacks of opportunity with correct turn resolution. Map pipeline loads BasicMap.tmj with explicit tileDefs mapping and configurable render scale.
 
 ## Completed
 
@@ -35,20 +35,33 @@ Core MVC gameplay loop is active with two-action economy, HP labels, and improve
 - **PreloadScene.ts**: Asset loading with progress bar, spritesheet configuration (32x32 frames)
 - **BattleScene.ts**: 
   - Tilemap rendering from Tiled JSON
-  - Unit sprite creation with frame 0 display
+  - Unit sprite creation with idle animation and directional animation playback
   - Objective visual markers with color-coded control status
   - Click-based interaction (select, move, attack)
   - Movement range highlighting (green) and attack targets (red)
+  - A* pathfinding with segmented movement tweens
   - Turn progression and UI updates
   - Two-action activation flow (movement + main action) with dash
   - In-world HP labels above units
   - Activation dimming (sprite + HP text)
-  - Corpse frame on unit defeat (index 24)
+  - Corpse frame on unit defeat (index 24), including AoO deaths
 - **ResultsScene.ts**: Winner announcement, color-coded results, click-to-restart
 
 ### Asset Integration
 - Fixed spritesheet loading issue: Changed from `load.image()` to `load.spritesheet()` with 32x32 frame configuration
 - Units now display as single sprites using `setFrame(0)`
+- AnimationManager creates directional animations for walk/attack/damage/death/idle
+
+### Animation & Combat Updates (2026-03-08)
+- Added `AnimationManager` for directional animation sequencing
+- Added `currentDirection` to Unit type for facing
+- Added animation timing config to `GameConfig` (frame rates, movement duration, dodge timing)
+- Movement uses A* pathfinding with per-tile tweened walk animations
+- Attacks play animation first, then resolve hit/damage and trigger damage/death animations
+- Misses trigger dodge tween for defender
+- Attacks of opportunity trigger when moving away from adjacent enemies
+- AoO triggers only once per move (start → destination) and does not retrigger mid-path
+- AoO deaths end activation and leave corpse frame visible
 
 ### Map Pipeline Updates (2026-03-08)
 - Added BasicMap.tmj (25x25, Tile Layer 1/2) as default map load
@@ -94,7 +107,7 @@ Core MVC gameplay loop is active with two-action economy, HP labels, and improve
 - Defeated unit handling needs validation (corpse frame index consistency)
 
 ## Technical debt / future considerations
-- Animation system (out of scope for MVC, but spritesheet structure supports it)
+- Animation system (now implemented; future enhancements could add abilities/spells)
 - AI opponent (milestone 2+)
 - Networked multiplayer (milestone 2+)
 - Map editor/uploader (milestone 2+)

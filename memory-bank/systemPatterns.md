@@ -67,8 +67,9 @@ Example: `BattleScene` calls `MovementEngine.getLegalMoves()` then renders highl
 
 ### 5. Spritesheet management
 - Load with `load.spritesheet()` specifying 32×32 frames
-- Display single frame with `setFrame(0)` for static MVC
-- Architecture supports future animation by changing frame index
+- AnimationManager builds directional animations using spritesheet grid
+- Idle animations use the first frame of each direction row
+- Death animations end on corpse frame (index 24 per row)
 
 ## Canonical gameplay constants (externalized)
 All values in `src/config/gameConfig.ts`:
@@ -117,12 +118,18 @@ Central state object passed to TurnManager:
 7. ObjectiveController updates control status (round end; retains previous owner if uncontested, neutral on tie)
 8. BattleScene refreshes UI
 
+## Movement + combat animation pattern
+- `AnimationManager` centralizes animation creation and direction logic
+- `BattleScene` uses A* pathfinding + segmented tweening for movement
+- Attacks play animation first, then resolve combat and trigger damage/death/dodge
+- Attacks of opportunity trigger once at movement start, then movement continues
+- AoO deaths end activation immediately and keep corpse frame
+
 ## Future-ready considerations (post-MVC)
 - **Ability system**: Add `abilities` array to Unit, define in JSON
 - **Multiple maps**: Load different Tiled JSONs, keep same engine
 - **Networked play**: GameState serialization ready, engine is deterministic
 - **AI opponent**: Engine functions are pure, can be called by AI agent
-- **Animation**: Spritesheets already configured, just add frame sequences
 
 ## Design principles enforced
 1. **Config is king**: No magic numbers in logic code

@@ -13,7 +13,7 @@
       "evasion": 0,
       "armor": 0
     },
-    "startPosition": { "x": 3, "y": 3 }
+    "startPosition": { "x": 6, "y": 3 }
   },
   {
     "id": "blue_soldier",
@@ -29,7 +29,7 @@
       "evasion": 0,
       "armor": 0
     },
-    "startPosition": { "x": 3, "y": 10 }
+    "startPosition": { "x": 6, "y": 10 }
   },
   {
     "id": "blue_thief",
@@ -45,6 +45,6 @@
       "evasion": 0,
       "armor": 0
     },
-    "startPosition": { "x": 3, "y": 18 }
+    "startPosition": { "x": 6, "y": 18 }
   }
 ]

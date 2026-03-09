@@ -1,7 +1,7 @@
 # Active Context
 
 ## Current focus
-Map authoring pipeline improvements: supporting BasicMap.tmj from Tiled, explicit tileDefs mapping, and scalable rendering so tile size can be tuned via config.
+Animation and movement upgrades for MVP: directional sprite animations, path-based movement, dodge visuals on misses, and attacks of opportunity with proper turn resolution.
 
 ## Confirmed decisions
 - Phaser 3 engine with TypeScript
@@ -10,13 +10,13 @@ Map authoring pipeline improvements: supporting BasicMap.tmj from Tiled, explici
 - One 25x25 tile map (BasicMap.tmj) for current iteration; three units per side (Hunter, Soldier, Thief)
 - Four rounds, three objectives, objective control radius of two tiles
 - Canonical hit and damage rules from design doc are active for MVC
-- Character spritesheets: 32x32 frames, displaying frame 0 for static sprites
+- Character spritesheets: 32x32 frames, directional rows + animation columns used for runtime animations
 - Map tileset: 16x16 tiles (world.png from punyworld tileset) rendered at configurable TILE_SIZE
 - Units get **movement + main action** per activation; main action can be attack or dash (second move)
-- Attack-first is allowed; opportunity attacks deferred
+- Attack-first is allowed; attacks of opportunity trigger when moving away from adjacent enemies
 - Activated units dim via alpha (including HP text)
 - Defeated units show the corpse frame (index 24) instead of fading
-- Key milestone-1 exclusions (no AI, no party builder, no shop/editor/upload, no animation system, no networking)
+- Key milestone-1 exclusions (no AI, no party builder, no shop/editor/upload, no networking)
 
 ## Completed implementation
 1. ✅ Project scaffolding (TypeScript, Vite, npm, package.json, tsconfig.json, vite.config.ts)
@@ -40,28 +40,36 @@ Map authoring pipeline improvements: supporting BasicMap.tmj from Tiled, explici
 8. ✅ Two-action economy: `hasUsedMovement` / `hasUsedMainAction`, dash support, action status UI
 9. ✅ In-world HP labels above units (current/max)
 10. ✅ Activation dimming and corpse frame on death
+11. ✅ Animation system with directional walk/attack/damage/death/idle sequences
+12. ✅ A* pathfinding for obstacle-aware movement with segment-based tweening
+13. ✅ Dodge animation on missed attacks
+14. ✅ Attacks of opportunity (AoO) when moving away from adjacent enemies
 
 ## Current state
 - Game loop is functional: unit selection → movement/attack → alternating activations → round end → winner determination
 - Map now loads from `BasicMap.tmj` with Tile Layer 1/2 (ground + overlay)
 - Tile defs use explicit gid mapping, with objective markers flagged via `objectiveMarker`
 - Movement range highlighting (green), dash range (blue), and attack targets (red) working
+- Movement uses A* pathing and plays directional walk animations along the path
 - Objective control visual feedback (color changes based on controlling team, updated at round end; ties go neutral, uncontested holds)
 - UI displays round, active team, objective scores, and selected unit info (action status included)
 - Units show HP labels above them; activated units are dimmed; defeated units display corpse frame
 - Rendering scale is controlled by `GameConfig.TILE_SIZE` (tilemap layers scale from 16px source tiles)
+- AoO triggers once at movement start (adjacent enemies at start who are not adjacent at destination)
+- AoO deaths now end the moving unit's activation and leave the corpse frame visible
 
 ## Known issues / testing needed
 - Full gameplay loop needs end-to-end testing
 - Combat resolution needs playtesting for balance verification
 - Objective control scoring at round end needs validation (including contested neutral and uncontested hold behavior)
 - Confirm corpse frame index is consistent across all spritesheets
+- Verify AoO edge cases (multiple adjacent enemies, AoO + dodge + death) during full matches
 
 ## Immediate next steps
 1. Review `tileDefs.basicmap.stub.json` and assign correct terrain categories (stairs/roads/water/cliffs)
 2. Validate objective marker placements from gid 708 in BasicMap
-3. Tune `GameConfig.TILE_SIZE` for desired readability
-4. Comprehensive gameplay testing (full match from start to finish)
+3. Tune `GameConfig.TILE_SIZE` and animation timing for desired readability/feel
+4. Comprehensive gameplay testing (full match from start to finish, including AoO and animations)
 
 ## Implementation guidance
 - Config remains source-of-truth for all tunable values

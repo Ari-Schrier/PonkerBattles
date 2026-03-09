@@ -64,7 +64,7 @@ src/
 - **Method**: `load.spritesheet()` with frame configuration
 - **Frame size**: 32×32 pixels
 - **Display size**: Derived from `GameConfig.TILE_SIZE` for readability (map tiles scaled from 16px source tiles)
-- **Frame display**: Frame 0 only for MVC (no animation)
+- **Frame display**: Directional animations via AnimationManager (idle, walk, attack, damage, death)
 
 ### Data Format Choices
 - **Map data**: Tiled JSON export (industry standard, editor-friendly)

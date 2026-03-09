@@ -414,6 +414,42 @@ export class BattleScene extends Phaser.Scene {
     healthText: Phaser.GameObjects.Text | undefined,
     onComplete: () => void
   ): void {
+    // Check for attacks of opportunity ONCE at the start
+    // Compare starting position to final destination
+    const startPos = path[0];
+    const endPos = path[path.length - 1];
+    const enemiesWithAoO = this.getEnemiesWithAttackOfOpportunity(unit, startPos, endPos);
+    
+    if (enemiesWithAoO.length > 0) {
+      // Process all AoOs before any movement
+      this.processAttacksOfOpportunity(unit, enemiesWithAoO, 0, sprite, healthText, (alive) => {
+        // After all AoOs, check if unit is still alive
+        if (!alive) {
+          // Unit died from AoO - end activation immediately
+          this.endUnitActivation(unit);
+          onComplete();
+          return;
+        }
+
+        // Unit survived - proceed with movement
+        this.animatePathSegments(unit, path, sprite, healthText, onComplete);
+      });
+    } else {
+      // No AoO - proceed with movement immediately
+      this.animatePathSegments(unit, path, sprite, healthText, onComplete);
+    }
+  }
+
+  /**
+   * Animate the path segments without AoO checks
+   */
+  private animatePathSegments(
+    unit: Unit,
+    path: Position[],
+    sprite: Phaser.GameObjects.Sprite,
+    healthText: Phaser.GameObjects.Text | undefined,
+    onComplete: () => void
+  ): void {
     // Path includes the starting position, so we start from index 1
     let currentIndex = 1;
 
@@ -428,43 +464,226 @@ export class BattleScene extends Phaser.Scene {
       const from = path[currentIndex - 1];
       const to = path[currentIndex];
 
-      // Calculate direction for this segment
-      const direction = AnimationManager.getDirection(from, to);
-      unit.currentDirection = direction;
-
-      // Play walk animation in the new direction
-      AnimationManager.playAnimation(sprite, unit.spriteKey, 'walk', direction);
-
-      // Calculate target position in pixels
-      const targetX = to.x * GameConfig.TILE_SIZE + GameConfig.TILE_SIZE / 2;
-      const targetY = to.y * GameConfig.TILE_SIZE + GameConfig.TILE_SIZE / 2;
-
-      // Tween sprite to next position
-      this.tweens.add({
-        targets: sprite,
-        x: targetX,
-        y: targetY,
-        duration: GameConfig.MOVEMENT_DURATION_MS,
-        ease: 'Linear',
-        onComplete: () => {
-          currentIndex++;
-          animateNextSegment();
-        }
+      // No AoO checks here - just move
+      this.executeMovementSegment(unit, from, to, sprite, healthText, () => {
+        currentIndex++;
+        animateNextSegment();
       });
-
-      // Tween health text alongside sprite
-      if (healthText) {
-        this.tweens.add({
-          targets: healthText,
-          x: targetX,
-          y: targetY - GameConfig.TILE_SIZE * 0.4,
-          duration: GameConfig.MOVEMENT_DURATION_MS,
-          ease: 'Linear'
-        });
-      }
     };
 
     animateNextSegment();
+  }
+
+  /**
+   * Execute a single movement segment (actual tile-to-tile movement)
+   */
+  private executeMovementSegment(
+    unit: Unit,
+    from: Position,
+    to: Position,
+    sprite: Phaser.GameObjects.Sprite,
+    healthText: Phaser.GameObjects.Text | undefined,
+    onComplete: () => void
+  ): void {
+    // Calculate direction for this segment
+    const direction = AnimationManager.getDirection(from, to);
+    unit.currentDirection = direction;
+
+    // Play walk animation in the new direction
+    AnimationManager.playAnimation(sprite, unit.spriteKey, 'walk', direction);
+
+    // Calculate target position in pixels
+    const targetX = to.x * GameConfig.TILE_SIZE + GameConfig.TILE_SIZE / 2;
+    const targetY = to.y * GameConfig.TILE_SIZE + GameConfig.TILE_SIZE / 2;
+
+    // Tween sprite to next position
+    this.tweens.add({
+      targets: sprite,
+      x: targetX,
+      y: targetY,
+      duration: GameConfig.MOVEMENT_DURATION_MS,
+      ease: 'Linear',
+      onComplete: onComplete
+    });
+
+    // Tween health text alongside sprite
+    if (healthText) {
+      this.tweens.add({
+        targets: healthText,
+        x: targetX,
+        y: targetY - GameConfig.TILE_SIZE * 0.4,
+        duration: GameConfig.MOVEMENT_DURATION_MS,
+        ease: 'Linear'
+      });
+    }
+  }
+
+  /**
+   * Get enemies that should get an attack of opportunity
+   */
+  private getEnemiesWithAttackOfOpportunity(
+    movingUnit: Unit,
+    fromPos: Position,
+    toPos: Position
+  ): Unit[] {
+    const enemiesWithAoO: Unit[] = [];
+
+    // Get all living enemy units
+    const enemies = this.gameState.units.filter(
+      u => u.team !== movingUnit.team && u.stats.hp > 0
+    );
+
+    for (const enemy of enemies) {
+      // Check if enemy is adjacent to the 'from' position
+      const wasAdjacent = MovementEngine.isAdjacent(enemy.position, fromPos);
+      
+      // Check if enemy is adjacent to the 'to' position
+      const willBeAdjacent = MovementEngine.isAdjacent(enemy.position, toPos);
+
+      // Trigger AoO if moving away (was adjacent, won't be adjacent)
+      if (wasAdjacent && !willBeAdjacent) {
+        enemiesWithAoO.push(enemy);
+      }
+    }
+
+    return enemiesWithAoO;
+  }
+
+  /**
+   * Process attacks of opportunity sequentially
+   */
+  private processAttacksOfOpportunity(
+    movingUnit: Unit,
+    enemies: Unit[],
+    index: number,
+    movingSprite: Phaser.GameObjects.Sprite,
+    movingHealthText: Phaser.GameObjects.Text | undefined,
+    onComplete: (alive: boolean) => void
+  ): void {
+    if (index >= enemies.length) {
+      // All AoOs processed
+      onComplete(true);
+      return;
+    }
+
+    const attacker = enemies[index];
+    const attackerSprite = this.unitSprites.get(attacker.id);
+    
+    if (!attackerSprite) {
+      // Skip this attacker, move to next
+      this.processAttacksOfOpportunity(movingUnit, enemies, index + 1, movingSprite, movingHealthText, onComplete);
+      return;
+    }
+
+    console.log(`${attacker.name} gets an attack of opportunity on ${movingUnit.name}!`);
+
+    // Calculate direction from attacker to moving unit
+    const direction = AnimationManager.getDirection(attacker.position, movingUnit.position);
+    attacker.currentDirection = direction;
+
+    // Play attack animation
+    AnimationManager.playAnimation(attackerSprite, attacker.spriteKey, 'attack', direction);
+
+    // Wait for attack animation to complete
+    attackerSprite.once('animationcomplete', () => {
+      // Resolve combat
+      const result = CombatResolver.resolveAttack(attacker, movingUnit);
+      
+      console.log(`Attack of Opportunity: ${result.hit ? 'HIT' : 'MISS'}${result.hit ? ` for ${result.damage} damage` : ''}`);
+
+      if (result.hit) {
+        movingUnit.stats.hp = Math.max(0, movingUnit.stats.hp - result.damage);
+        
+        // Update health text
+        if (movingHealthText) {
+          movingHealthText.setText(`${movingUnit.stats.hp}/${movingUnit.stats.maxHp}`);
+        }
+
+        // Calculate defender's direction (face attacker)
+        const defenderDirection = AnimationManager.getDirection(movingUnit.position, attacker.position);
+        movingUnit.currentDirection = defenderDirection;
+
+        if (result.targetDefeated) {
+          // Moving unit died - play death animation
+          AnimationManager.playAnimation(movingSprite, movingUnit.spriteKey, 'death', defenderDirection);
+
+          movingSprite.once('animationcomplete', () => {
+            // Return attacker to idle
+            AnimationManager.playAnimation(attackerSprite, attacker.spriteKey, 'idle', direction);
+
+            // Ensure corpse frame stays visible
+            movingSprite.setFrame(24);
+
+            // All done - unit is dead
+            onComplete(false);
+          });
+        } else {
+          // Play damage animation
+          AnimationManager.playAnimation(movingSprite, movingUnit.spriteKey, 'damage', defenderDirection);
+          
+          movingSprite.once('animationcomplete', () => {
+            // Return both to idle
+            AnimationManager.playAnimation(movingSprite, movingUnit.spriteKey, 'idle', defenderDirection);
+            AnimationManager.playAnimation(attackerSprite, attacker.spriteKey, 'idle', direction);
+
+            // Process next AoO
+            this.processAttacksOfOpportunity(movingUnit, enemies, index + 1, movingSprite, movingHealthText, onComplete);
+          });
+        }
+      } else {
+        // Miss - defender dodges
+        const originalX = movingSprite.x;
+        const originalY = movingSprite.y;
+        const dodgeOffset = this.calculateDodgeOffset(direction);
+        
+        // Quick dodge
+        this.tweens.add({
+          targets: movingSprite,
+          x: originalX + dodgeOffset.x,
+          y: originalY + dodgeOffset.y,
+          duration: GameConfig.DODGE_DURATION_MS,
+          ease: 'Quad.easeOut',
+          onComplete: () => {
+              this.tweens.add({
+                targets: movingSprite,
+                x: originalX,
+                y: originalY,
+                duration: GameConfig.DODGE_DURATION_MS,
+                ease: 'Quad.easeIn',
+                onComplete: () => {
+                  // Return attacker to idle
+                  AnimationManager.playAnimation(attackerSprite, attacker.spriteKey, 'idle', direction);
+
+                  // Process next AoO
+                  this.processAttacksOfOpportunity(movingUnit, enemies, index + 1, movingSprite, movingHealthText, onComplete);
+                }
+              });
+            
+            // Dodge health text back
+            if (movingHealthText) {
+              this.tweens.add({
+                targets: movingHealthText,
+                x: originalX,
+                y: originalY - GameConfig.TILE_SIZE * 0.4,
+                duration: GameConfig.DODGE_DURATION_MS,
+                ease: 'Quad.easeIn'
+              });
+            }
+          }
+        });
+        
+        // Dodge health text out
+        if (movingHealthText) {
+          this.tweens.add({
+            targets: movingHealthText,
+            x: originalX + dodgeOffset.x,
+            y: originalY + dodgeOffset.y - GameConfig.TILE_SIZE * 0.4,
+            duration: GameConfig.DODGE_DURATION_MS,
+            ease: 'Quad.easeOut'
+          });
+        }
+      }
+    });
   }
 
   private attemptAttack(attacker: Unit, defender: Unit): void {
@@ -557,19 +776,71 @@ export class BattleScene extends Phaser.Scene {
             });
           }
         } else {
-          // Miss - just return attacker to idle
-          AnimationManager.playAnimation(attackerSprite, attacker.spriteKey, 'idle', direction);
+          // Miss - defender dodges!
+          const defenderHealthText = this.healthTexts.get(defender.id);
           
-          // Mark main action as used
-          attacker.hasUsedMainAction = true;
+          // Store original positions
+          const originalX = defenderSprite.x;
+          const originalY = defenderSprite.y;
+          
+          // Calculate dodge offset (perpendicular to attack direction)
+          const dodgeOffset = this.calculateDodgeOffset(direction);
+          
+          // Tween defender to the side (dodge out)
+          this.tweens.add({
+            targets: defenderSprite,
+            x: originalX + dodgeOffset.x,
+            y: originalY + dodgeOffset.y,
+            duration: GameConfig.DODGE_DURATION_MS,
+            ease: 'Quad.easeOut',
+            onComplete: () => {
+              // Tween back to original position (dodge back)
+              this.tweens.add({
+                targets: defenderSprite,
+                x: originalX,
+                y: originalY,
+                duration: GameConfig.DODGE_DURATION_MS,
+                ease: 'Quad.easeIn',
+                onComplete: () => {
+                  // Dodge complete, return attacker to idle
+                  AnimationManager.playAnimation(attackerSprite, attacker.spriteKey, 'idle', direction);
+                  
+                  // Mark main action as used
+                  attacker.hasUsedMainAction = true;
 
-          // Check if unit's turn is complete
-          if (this.isUnitTurnComplete(attacker)) {
-            this.endUnitActivation(attacker);
-          } else {
-            // Re-highlight available actions
-            this.showMovementRange(attacker);
-            this.updateUI();
+                  // Check if unit's turn is complete
+                  if (this.isUnitTurnComplete(attacker)) {
+                    this.endUnitActivation(attacker);
+                  } else {
+                    // Re-highlight available actions
+                    this.showMovementRange(attacker);
+                    this.updateUI();
+                  }
+                }
+              });
+              
+              // Tween health text back too
+              if (defenderHealthText) {
+                this.tweens.add({
+                  targets: defenderHealthText,
+                  x: originalX,
+                  y: originalY - GameConfig.TILE_SIZE * 0.4,
+                  duration: GameConfig.DODGE_DURATION_MS,
+                  ease: 'Quad.easeIn'
+                });
+              }
+            }
+          });
+          
+          // Tween health text with sprite (dodge out)
+          if (defenderHealthText) {
+            this.tweens.add({
+              targets: defenderHealthText,
+              x: originalX + dodgeOffset.x,
+              y: originalY + dodgeOffset.y - GameConfig.TILE_SIZE * 0.4,
+              duration: GameConfig.DODGE_DURATION_MS,
+              ease: 'Quad.easeOut'
+            });
           }
         }
       });
@@ -730,6 +1001,39 @@ export class BattleScene extends Phaser.Scene {
       case 'land':
       default:
         return 1;
+    }
+  }
+
+  /**
+   * Calculate dodge offset perpendicular to attack direction
+   */
+  private calculateDodgeOffset(attackDirection: number): { x: number; y: number } {
+    const offset = GameConfig.DODGE_OFFSET_PIXELS;
+    
+    // For each attack direction, calculate a perpendicular dodge
+    switch (attackDirection) {
+      case 0: // Attacking down - dodge left or right
+      case 4: // Attacking up - dodge left or right
+        return { x: offset, y: 0 }; // Dodge right
+        
+      case 1: // Attacking down-right - dodge perpendicular
+        return { x: offset, y: -offset }; // Dodge up-right
+        
+      case 2: // Attacking right - dodge up or down
+      case 6: // Attacking left - dodge up or down
+        return { x: 0, y: -offset }; // Dodge up
+        
+      case 3: // Attacking up-right - dodge perpendicular
+        return { x: offset, y: offset }; // Dodge down-right
+        
+      case 5: // Attacking up-left - dodge perpendicular
+        return { x: -offset, y: offset }; // Dodge down-left
+        
+      case 7: // Attacking down-left - dodge perpendicular
+        return { x: -offset, y: -offset }; // Dodge up-left
+        
+      default:
+        return { x: offset, y: 0 }; // Default dodge right
     }
   }
 }
