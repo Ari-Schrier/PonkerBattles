@@ -140,11 +140,74 @@ Central state object passed to TurnManager:
 - Attacks of opportunity enqueue before movement segments
 - AoO deaths end activation immediately and keep corpse frame
 
+## Ability System Architecture (Implemented)
+
+### Overview
+A comprehensive, data-driven ability system that supports activated and triggered abilities, status effects, flexible targeting, and composable effects.
+
+### Components
+- **TargetingSystem** (`src/engine/abilities/TargetingSystem.ts`): Validates and resolves targeting patterns
+- **EffectResolver** (`src/engine/abilities/EffectResolver.ts`): Executes individual ability effects
+- **StatusManager** (`src/engine/abilities/StatusManager.ts`): Manages active status effects on units
+- **AbilityResolver** (`src/engine/abilities/AbilityResolver.ts`): Orchestrates ability execution
+- **TriggerManager** (`src/engine/abilities/TriggerManager.ts`): Handles automatic ability triggering
+- **AbilityDataLoader** (`src/engine/abilities/AbilityDataLoader.ts`): Loads definitions from JSON
+
+### Data Files
+- **abilities.json** (`src/data/abilities.json`): 10+ example ability definitions
+- **statuses.json** (`src/data/statuses.json`): 12+ example status effect definitions
+
+### Key Features
+1. **JSON-driven content**: Abilities and statuses defined entirely in JSON
+2. **Composable effects**: 15+ reusable effect types (damage, heal, teleport, push, pull, status, etc.)
+3. **Flexible targeting**: 17+ targeting patterns (single, radius, line, cone, adjacent, etc.)
+4. **Trigger system**: 17+ trigger types (on_damage, on_death, on_turn_start, etc.)
+5. **Status effects**: Share same trigger/effect system as abilities
+6. **Animation sequencing**: Multi-step animation definitions in data
+7. **Unified combat**: Integrates with existing CombatResolver for attack effects
+8. **Future-ready**: Supports cooldowns, charges, AI hints in schema
+
+### Usage Pattern
+```typescript
+// Initialize system
+const statusManager = new StatusManager();
+const abilityResolver = new AbilityResolver(statusManager);
+const triggerManager = new TriggerManager(abilityResolver, statusManager);
+
+// Load and register definitions
+const { abilities, statuses } = await AbilityDataLoader.loadAll();
+triggerManager.registerAbilities(abilities);
+statusManager.registerStatuses(statuses);
+
+// Execute activated ability
+const result = abilityResolver.executeActivatedAbility(
+  ability, caster, targetPos, units, mapWidth, mapHeight
+);
+
+// Trigger automatic abilities
+triggerManager.onTurnStart(unit, units, mapWidth, mapHeight);
+triggerManager.onDamageTaken(unit, damage, attacker, units, mapWidth, mapHeight);
+```
+
+### Integration Points
+- Units have optional `abilities?: ActiveAbility[]` array
+- Abilities use existing CombatResolver for attack effects
+- Animation steps integrate with ActionQueue
+- Status tints can be applied to unit sprites
+
+### Documentation
+See `src/engine/abilities/README.md` for comprehensive documentation including:
+- Quick start guide
+- JSON schema reference
+- Complete list of trigger types, targeting patterns, and effect types
+- Integration examples
+- Best practices
+- Example abilities and statuses
+
 ## Future-ready considerations (post-MVC)
-- **Ability system**: Add `abilities` array to Unit, define in JSON
 - **Multiple maps**: Load different Tiled JSONs, keep same engine
 - **Networked play**: GameState serialization ready, engine is deterministic
-- **AI opponent**: Engine functions are pure, can be called by AI agent
+- **AI opponent**: Engine functions are pure, can be called by AI agent; ability AI hints ready
 
 ## Design principles enforced
 1. **Config is king**: No magic numbers in logic code

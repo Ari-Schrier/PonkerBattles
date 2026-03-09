@@ -30,6 +30,15 @@ export interface Unit {
   hasActivated: boolean;
   hasUsedMovement: boolean;
   hasUsedMainAction: boolean;
+  abilities?: ActiveAbility[];  // Optional abilities array for ability system
+}
+
+// Import ability types (defined in abilities/types.ts)
+export interface ActiveAbility {
+  definitionId: string;
+  remainingCharges?: number;
+  currentCooldown?: number;
+  triggerCount: number;
 }
 
 export interface Tile {

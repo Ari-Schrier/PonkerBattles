@@ -3,6 +3,8 @@
 ## Current status
 Core MVC gameplay loop now includes full animation support, A* path-based movement, dodge feedback on misses, and attacks of opportunity with correct turn resolution. Map pipeline loads BasicMap.tmj with explicit tileDefs mapping and configurable render scale. Recent refactors introduced scene controllers, ActionQueue sequencing, TerrainRules, and Direction enum.
 
+Ability animations and status effects are now wired: fireball projectile + explosion visuals, poison strike overlays, status indicators, and round-start poison damage with bubble animation. Ability-based kills (fireball) now play death animations instead of freezing.
+
 ## Completed
 
 ### Project Infrastructure (2026-03-02)
@@ -69,6 +71,14 @@ Core MVC gameplay loop now includes full animation support, A* path-based moveme
 - AoO triggers only once per move (start → destination) and does not retrigger mid-path
 - AoO deaths end activation and leave corpse frame visible
 
+### Ability + Status Visuals (2026-03-09)
+- Added fireball projectile/explosion animations with overlapping damage animation
+- Added poison strike overlay + poisoned indicator sprite
+- Added green poison bubbles status animation
+- Poison now triggers at round start for all poisoned units (on_round_start)
+- End-of-turn status triggers restored with per-unit duration tick
+- Ability damage deaths now play death animation via BattleScene
+
 ### Map Pipeline Updates (2026-03-08)
 - Added BasicMap.tmj (25x25, Tile Layer 1/2) as default map load
 - Generated `tileDefs.basicmap.stub.json` with explicit gid mappings and objective marker gid 708
@@ -111,6 +121,7 @@ Core MVC gameplay loop now includes full animation support, A* path-based moveme
 - Movement calculation may need optimization for larger maps (acceptable for 22x22)
 - Turn progression logic needs comprehensive testing
 - Defeated unit handling needs validation (corpse frame index consistency)
+- Validate round-start poison timing vs animation feel
 
 ## Technical debt / future considerations
 - Animation system (now implemented; future enhancements could add abilities/spells)
@@ -130,3 +141,4 @@ Core MVC gameplay loop now includes full animation support, A* path-based moveme
 - 2026-03-06: Added two-action economy, HP labels, activation dimming, and corpse frames; fixed attack repeat bug
 - 2026-03-08: Integrated BasicMap.tmj, generated tileDefs stub, added objective marker parsing, and made render scale configurable via TILE_SIZE
 - 2026-03-09: Extracted scene controllers, added ActionQueue sequencing, centralized TerrainRules, and replaced direction numbers with Direction enum
+- 2026-03-09: Added poison/fireball ability animation wiring, status indicators, round-start poison trigger, and ability death animation handling

@@ -70,6 +70,49 @@ export class PreloadScene extends Phaser.Scene {
       frameHeight: 32
     });
 
+    // Load ability effect spritesheets (16x16 frames)
+    this.load.spritesheet(
+      'fireball-projectile',
+      'assets/ability spritesheets/projectiles/Fireball-Anim(Projectile).png',
+      {
+        frameWidth: 16,
+        frameHeight: 16
+      }
+    );
+    this.load.spritesheet(
+      'poison-slash-overlay',
+      'assets/ability spritesheets/damaged overlay/Poison-Slash-Anim.png',
+      {
+        frameWidth: 16,
+        frameHeight: 16
+      }
+    );
+    this.load.spritesheet(
+      'fire-explosion',
+      'assets/ability spritesheets/damaged overlay/Fire-Explosion-Anim.png',
+      {
+        frameWidth: 16,
+        frameHeight: 16
+      }
+    );
+    this.load.spritesheet(
+      'take-fire-damage',
+      'assets/ability spritesheets/damaged overlay/Take-Fire-Damage-Anim.png',
+      {
+        frameWidth: 16,
+        frameHeight: 16
+      }
+    );
+    this.load.spritesheet(
+      'green-poison-bubbles',
+      'assets/ability spritesheets/damaged overlay/Green-Poison-Bubbles-Anim.png',
+      {
+        frameWidth: 16,
+        frameHeight: 16
+      }
+    );
+    this.load.image('poisoned-indicator', 'assets/status indicators/Poisoned-Indicator.png');
+
     // Load map data
     this.load.tilemapTiledJSON('basicMap', new URL('../data/maps/BasicMap.tmj', import.meta.url).href);
     this.load.json('tileDefs', new URL('../data/maps/tileDefs.basicmap.stub.json', import.meta.url).href);
@@ -77,6 +120,10 @@ export class PreloadScene extends Phaser.Scene {
     // Load unit data
     this.load.json('blueTeam', new URL('../data/units/blueTeam.json', import.meta.url).href);
     this.load.json('redTeam', new URL('../data/units/redTeam.json', import.meta.url).href);
+
+    // Load ability and status data
+    this.load.json('abilities', new URL('../data/abilities.json', import.meta.url).href);
+    this.load.json('statuses', new URL('../data/statuses.json', import.meta.url).href);
   }
 
   create(): void {

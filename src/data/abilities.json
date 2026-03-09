@@ -1,0 +1,437 @@
+[
+  {
+    "id": "melee_attack",
+    "name": "Melee Attack",
+    "description": "Strike an adjacent enemy with a melee weapon",
+    "trigger": {
+      "type": "activated"
+    },
+    "cost": {
+      "type": "main_action"
+    },
+    "targeting": {
+      "pattern": "single_enemy",
+      "range": 1,
+      "mustTargetOccupied": true
+    },
+    "effects": [
+      {
+        "type": "attack"
+      }
+    ],
+    "animationSteps": [
+      {
+        "type": "caster_anim",
+        "animationType": "attack",
+        "duration": 400
+      },
+      {
+        "type": "wait",
+        "duration": 100
+      },
+      {
+        "type": "target_anim",
+        "animationType": "damage",
+        "duration": 300
+      }
+    ],
+    "aiHints": {
+      "priority": "high",
+      "preferredTargetType": "low_hp",
+      "role": "offensive",
+      "useWhen": "Adjacent to enemy"
+    }
+  },
+  {
+    "id": "dash",
+    "name": "Dash",
+    "description": "Consume your main action to gain a second movement",
+    "trigger": {
+      "type": "activated"
+    },
+    "cost": {
+      "type": "main_action"
+    },
+    "targeting": {
+      "pattern": "self",
+      "range": 0
+    },
+    "effects": [
+      {
+        "type": "dash"
+      }
+    ],
+    "animationSteps": [
+      {
+        "type": "effect_visual",
+        "effectSprite": "speed_boost",
+        "effectDuration": 500
+      }
+    ],
+    "aiHints": {
+      "priority": "medium",
+      "role": "mobility",
+      "useWhen": "Need to reach distant objective or escape"
+    }
+  },
+  {
+    "id": "fireball",
+    "name": "Fireball",
+    "description": "Launch a ball of fire that explodes on impact, damaging all enemies in a radius",
+    "trigger": {
+      "type": "activated"
+    },
+    "cost": {
+      "type": "main_action"
+    },
+    "targeting": {
+      "pattern": "radius_enemies",
+      "range": 6,
+      "minRange": 2,
+      "radius": 2
+    },
+    "effects": [
+      {
+        "type": "damage",
+        "amount": 2
+      }
+    ],
+    "animationSteps": [
+      {
+        "type": "caster_anim",
+        "animationType": "cast",
+        "duration": 350
+      },
+      {
+        "type": "projectile",
+        "projectileSprite": "fireball-projectile",
+        "projectileSpeed": 320
+      },
+      {
+        "type": "effect_visual",
+        "effectSprite": "fire-explosion",
+        "effectDuration": 750,
+        "waitForCompletion": false
+      },
+      {
+        "type": "target_anim",
+        "animationType": "damage",
+        "duration": 300,
+        "waitForCompletion": false
+      }
+    ],
+    "cooldown": 3,
+    "aiHints": {
+      "priority": "high",
+      "preferredTargetType": "high_value",
+      "estimatedValue": 8,
+      "role": "offensive",
+      "useWhen": "Multiple enemies clustered together"
+    }
+  },
+  {
+    "id": "counterattack",
+    "name": "Counterattack",
+    "description": "Automatically strike back when attacked",
+    "trigger": {
+      "type": "on_attacked",
+      "chance": 0.5
+    },
+    "cost": {
+      "type": "reaction"
+    },
+    "targeting": {
+      "pattern": "single_unit",
+      "range": 1
+    },
+    "effects": [
+      {
+        "type": "attack",
+        "attackStatOverride": {
+          "attackBonus": 1
+        }
+      }
+    ],
+    "animationSteps": [
+      {
+        "type": "caster_anim",
+        "animationType": "attack",
+        "duration": 300
+      }
+    ],
+    "aiHints": {
+      "priority": "medium",
+      "role": "defensive",
+      "useWhen": "Passive ability - always active"
+    }
+  },
+  {
+    "id": "poison_strike",
+    "name": "Poison Strike",
+    "description": "Attack that applies poison to the target",
+    "trigger": {
+      "type": "activated"
+    },
+    "cost": {
+      "type": "main_action"
+    },
+    "targeting": {
+      "pattern": "single_enemy",
+      "range": 1,
+      "mustTargetOccupied": true
+    },
+    "effects": [
+      {
+        "type": "attack"
+      },
+      {
+        "type": "apply_status",
+        "statusId": "poison",
+        "statusDuration": 3
+      }
+    ],
+    "animationSteps": [
+      {
+        "type": "caster_anim",
+        "animationType": "attack",
+        "duration": 100,
+        "waitForCompletion": false
+      },
+      {
+        "type": "target_anim",
+        "animationType": "damage",
+        "duration": 0,
+        "waitForCompletion": false
+      },
+      {
+        "type": "effect_visual",
+        "effectSprite": "poison-slash-overlay",
+        "effectDuration": 700
+      }
+    ],
+    "cooldown": 2,
+    "aiHints": {
+      "priority": "high",
+      "preferredTargetType": "high_hp",
+      "role": "offensive",
+      "useWhen": "Against high HP targets"
+    }
+  },
+  {
+    "id": "heal",
+    "name": "Heal",
+    "description": "Restore health to yourself or an ally",
+    "trigger": {
+      "type": "activated"
+    },
+    "cost": {
+      "type": "main_action"
+    },
+    "targeting": {
+      "pattern": "single_ally",
+      "range": 3,
+      "canTargetSelf": true
+    },
+    "effects": [
+      {
+        "type": "heal",
+        "amount": 2
+      }
+    ],
+    "animationSteps": [
+      {
+        "type": "caster_anim",
+        "animationType": "cast",
+        "duration": 500
+      },
+      {
+        "type": "effect_visual",
+        "effectSprite": "heal_glow",
+        "effectDuration": 800
+      }
+    ],
+    "cooldown": 3,
+    "aiHints": {
+      "priority": "high",
+      "preferredTargetType": "low_hp",
+      "role": "defensive",
+      "useWhen": "Ally below 50% health"
+    }
+  },
+  {
+    "id": "teleport",
+    "name": "Teleport",
+    "description": "Instantly move to a target location",
+    "trigger": {
+      "type": "activated"
+    },
+    "cost": {
+      "type": "main_action"
+    },
+    "targeting": {
+      "pattern": "single_tile",
+      "range": 5,
+      "mustTargetEmpty": true
+    },
+    "effects": [
+      {
+        "type": "teleport"
+      }
+    ],
+    "animationSteps": [
+      {
+        "type": "effect_visual",
+        "effectSprite": "teleport_out",
+        "effectDuration": 400
+      },
+      {
+        "type": "wait",
+        "duration": 200
+      },
+      {
+        "type": "effect_visual",
+        "effectSprite": "teleport_in",
+        "effectDuration": 400
+      }
+    ],
+    "cooldown": 4,
+    "aiHints": {
+      "priority": "medium",
+      "role": "mobility",
+      "useWhen": "Need to escape or reposition quickly"
+    }
+  },
+  {
+    "id": "execute",
+    "name": "Execute",
+    "description": "Deal massive damage to low-health enemies",
+    "trigger": {
+      "type": "activated"
+    },
+    "cost": {
+      "type": "main_action"
+    },
+    "targeting": {
+      "pattern": "single_enemy",
+      "range": 1
+    },
+    "effects": [
+      {
+        "type": "damage",
+        "amount": 5,
+        "condition": {
+          "type": "target_hp_below",
+          "value": 2
+        }
+      },
+      {
+        "type": "damage",
+        "amount": 1
+      }
+    ],
+    "animationSteps": [
+      {
+        "type": "caster_anim",
+        "animationType": "attack",
+        "duration": 600
+      },
+      {
+        "type": "camera_shake",
+        "intensity": 0.5,
+        "duration": 300
+      }
+    ],
+    "cooldown": 3,
+    "aiHints": {
+      "priority": "critical",
+      "preferredTargetType": "low_hp",
+      "role": "offensive",
+      "useWhen": "Target has 1 HP remaining"
+    }
+  },
+  {
+    "id": "battle_cry",
+    "name": "Battle Cry",
+    "description": "Boost attack of all nearby allies",
+    "trigger": {
+      "type": "activated"
+    },
+    "cost": {
+      "type": "main_action"
+    },
+    "targeting": {
+      "pattern": "radius_allies",
+      "range": 0,
+      "radius": 3,
+      "canTargetSelf": true
+    },
+    "effects": [
+      {
+        "type": "apply_status",
+        "statusId": "attack_buff",
+        "statusDuration": 3
+      }
+    ],
+    "animationSteps": [
+      {
+        "type": "caster_anim",
+        "animationType": "cast",
+        "duration": 500
+      },
+      {
+        "type": "effect_visual",
+        "effectSprite": "buff_aura",
+        "effectDuration": 800
+      },
+      {
+        "type": "sound",
+        "soundKey": "battle_cry"
+      }
+    ],
+    "cooldown": 5,
+    "aiHints": {
+      "priority": "high",
+      "role": "utility",
+      "useWhen": "Near multiple allies before big fight"
+    }
+  },
+  {
+    "id": "death_explosion",
+    "name": "Death Explosion",
+    "description": "Explode when killed, damaging nearby enemies",
+    "trigger": {
+      "type": "on_death"
+    },
+    "cost": {
+      "type": "free"
+    },
+    "targeting": {
+      "pattern": "radius_enemies",
+      "range": 0,
+      "radius": 2
+    },
+    "effects": [
+      {
+        "type": "damage",
+        "amount": 2
+      }
+    ],
+    "animationSteps": [
+      {
+        "type": "effect_visual",
+        "effectSprite": "explosion",
+        "effectDuration": 600
+      },
+      {
+        "type": "camera_shake",
+        "intensity": 0.08,
+        "duration": 300
+      }
+    ],
+    "aiHints": {
+      "priority": "low",
+      "role": "defensive",
+      "useWhen": "Passive ability - triggers on death"
+    }
+  }
+]

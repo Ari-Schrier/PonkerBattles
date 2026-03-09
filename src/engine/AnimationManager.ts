@@ -150,10 +150,11 @@ export class AnimationManager {
   static playAnimation(
     sprite: Phaser.GameObjects.Sprite,
     spriteKey: string,
-    animationType: 'walk' | 'attack' | 'damage' | 'death' | 'idle',
+    animationType: 'walk' | 'attack' | 'damage' | 'death' | 'idle' | 'cast' | 'shoot',
     direction: Direction
   ): void {
-    const animKey = `${spriteKey}-${animationType}-${direction}`;
+    const resolvedType = animationType === 'cast' || animationType === 'shoot' ? 'attack' : animationType;
+    const animKey = `${spriteKey}-${resolvedType}-${direction}`;
     sprite.play(animKey);
   }
 

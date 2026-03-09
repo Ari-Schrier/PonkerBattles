@@ -1,0 +1,267 @@
+[
+  {
+    "id": "poison",
+    "name": "Poison",
+    "description": "Takes damage at the start of each turn",
+    "duration": 3,
+    "stackable": false,
+    "triggers": [
+      {
+        "type": "on_round_start"
+      }
+    ],
+    "effects": [
+      {
+        "type": "damage",
+        "amount": 1
+      }
+    ],
+    "tint": 65280,
+    "animationSteps": [
+      {
+        "type": "effect_visual",
+        "effectSprite": "green-poison-bubbles",
+        "effectDuration": 600
+      }
+    ]
+  },
+  {
+    "id": "attack_buff",
+    "name": "Attack Buff",
+    "description": "Increased attack power",
+    "duration": 3,
+    "stackable": false,
+    "triggers": [],
+    "effects": [],
+    "statModifiers": [
+      {
+        "stat": "attackBonus",
+        "modifierType": "flat",
+        "amount": 2
+      }
+    ],
+    "tint": 16711680
+  },
+  {
+    "id": "defense_buff",
+    "name": "Defense Buff",
+    "description": "Increased armor",
+    "duration": 3,
+    "stackable": false,
+    "triggers": [],
+    "effects": [],
+    "statModifiers": [
+      {
+        "stat": "armor",
+        "modifierType": "flat",
+        "amount": 1
+      }
+    ],
+    "tint": 255
+  },
+  {
+    "id": "evasion_buff",
+    "name": "Evasion Buff",
+    "description": "Harder to hit",
+    "duration": 2,
+    "stackable": false,
+    "triggers": [],
+    "effects": [],
+    "statModifiers": [
+      {
+        "stat": "evasion",
+        "modifierType": "flat",
+        "amount": 3
+      }
+    ],
+    "tint": 16776960
+  },
+  {
+    "id": "burn",
+    "name": "Burn",
+    "description": "Takes fire damage at the end of each turn",
+    "duration": 3,
+    "stackable": true,
+    "maxStacks": 3,
+    "triggers": [
+      {
+        "type": "on_turn_end"
+      }
+    ],
+    "effects": [
+      {
+        "type": "damage",
+        "amount": 1
+      }
+    ],
+    "tint": 16728320,
+    "animationSteps": [
+      {
+        "type": "effect_visual",
+        "effectSprite": "fire_damage",
+        "effectDuration": 400
+      }
+    ]
+  },
+  {
+    "id": "regeneration",
+    "name": "Regeneration",
+    "description": "Restores health at the start of each turn",
+    "duration": 3,
+    "stackable": false,
+    "triggers": [
+      {
+        "type": "on_turn_start"
+      }
+    ],
+    "effects": [
+      {
+        "type": "heal",
+        "amount": 1
+      }
+    ],
+    "tint": 65280,
+    "animationSteps": [
+      {
+        "type": "effect_visual",
+        "effectSprite": "heal_glow",
+        "effectDuration": 500
+      }
+    ]
+  },
+  {
+    "id": "stun",
+    "name": "Stun",
+    "description": "Cannot act",
+    "duration": 1,
+    "stackable": false,
+    "triggers": [],
+    "effects": [],
+    "statModifiers": [
+      {
+        "stat": "movementRange",
+        "modifierType": "multiply",
+        "amount": 0
+      }
+    ],
+    "tint": 8421504
+  },
+  {
+    "id": "slow",
+    "name": "Slow",
+    "description": "Reduced movement range",
+    "duration": 2,
+    "stackable": false,
+    "triggers": [],
+    "effects": [],
+    "statModifiers": [
+      {
+        "stat": "movementRange",
+        "modifierType": "percent",
+        "amount": -50
+      }
+    ],
+    "tint": 4286945
+  },
+  {
+    "id": "berserk",
+    "name": "Berserk",
+    "description": "Increased attack but reduced defense",
+    "duration": 2,
+    "stackable": false,
+    "triggers": [],
+    "effects": [],
+    "statModifiers": [
+      {
+        "stat": "attackBonus",
+        "modifierType": "flat",
+        "amount": 3
+      },
+      {
+        "stat": "armor",
+        "modifierType": "flat",
+        "amount": -1
+      }
+    ],
+    "tint": 16716947
+  },
+  {
+    "id": "shield",
+    "name": "Shield",
+    "description": "Absorbs damage once then disappears",
+    "duration": 3,
+    "stackable": false,
+    "triggers": [
+      {
+        "type": "on_damage_taken",
+        "maxTriggers": 1
+      }
+    ],
+    "effects": [
+      {
+        "type": "heal",
+        "amount": 1
+      },
+      {
+        "type": "remove_status",
+        "removeStatusId": "shield"
+      }
+    ],
+    "tint": 8900331,
+    "animationSteps": [
+      {
+        "type": "effect_visual",
+        "effectSprite": "shield_break",
+        "effectDuration": 400
+      }
+    ]
+  },
+  {
+    "id": "thorns",
+    "name": "Thorns",
+    "description": "Damage attackers when hit",
+    "duration": 3,
+    "stackable": false,
+    "triggers": [
+      {
+        "type": "on_attacked"
+      }
+    ],
+    "effects": [
+      {
+        "type": "damage",
+        "amount": 1
+      }
+    ],
+    "tint": 9127187,
+    "animationSteps": [
+      {
+        "type": "effect_visual",
+        "effectSprite": "thorns_damage",
+        "effectDuration": 300
+      }
+    ]
+  },
+  {
+    "id": "marked",
+    "name": "Marked",
+    "description": "Takes extra damage from all sources",
+    "duration": 2,
+    "stackable": false,
+    "triggers": [],
+    "effects": [],
+    "statModifiers": [
+      {
+        "stat": "armor",
+        "modifierType": "flat",
+        "amount": -2
+      },
+      {
+        "stat": "evasion",
+        "modifierType": "flat",
+        "amount": -3
+      }
+    ],
+    "tint": 16737095
+  }
+]

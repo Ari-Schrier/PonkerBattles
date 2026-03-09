@@ -1,7 +1,7 @@
 # Active Context
 
 ## Current focus
-Refactor passes to improve maintainability: controller extraction, action sequencing via queue, terrain rules boundary, and Direction enum replacement.
+Ability system polish: animation sequencing, status effect visuals, and turn/round trigger consistency.
 
 ## Confirmed decisions
 - Phaser 3 engine with TypeScript
@@ -47,9 +47,23 @@ Refactor passes to improve maintainability: controller extraction, action sequen
 15. ✅ Scene controllers split (Unit/UI/Movement/Combat) and ActionQueue sequencing
 16. ✅ Terrain rules moved to `TerrainRules` module
 17. ✅ Direction enum replaces numeric direction values across engine/controllers/tests
+18. ✅ Ability system scaffolding with targeting, effects, triggers, statuses, and JSON definitions
+19. ✅ Ability/action menu UI for selecting unit abilities
+20. ✅ Hunters have Fireball and Thieves have Poison Strike via unit data
+21. ✅ Ability animation sequencing extended with projectile/effect/target/camera steps
+22. ✅ Poison Strike applies status with overlay indicator and poison bubbles
+23. ✅ Fireball projectile + explosion visuals wired, with damage anim overlap support
+24. ✅ Round-start status triggers (poison) and end-of-turn status ticks now supported
 
 ## Current state
 - Game loop is functional: unit selection → movement/attack → alternating activations → round end → winner determination
+- Ability system is initialized from JSON data loaded in PreloadScene
+- Ability menu appears above selected unit showing activated abilities
+- Ability targeting highlights appear when selecting an ability
+- Ability execution applies damage/statuses and consumes action costs
+- Status indicators now render above poisoned units and move with them
+- Poison bubbles play at round start for all poisoned units
+- Ability-based kills (e.g., fireball) now play death animation instead of freezing
 - Map now loads from `BasicMap.tmj` with Tile Layer 1/2 (ground + overlay)
 - Tile defs use explicit gid mapping, with objective markers flagged via `objectiveMarker`
 - Movement range highlighting (green), dash range (blue), and attack targets (red) working
@@ -70,12 +84,13 @@ Refactor passes to improve maintainability: controller extraction, action sequen
 - Objective control scoring at round end needs validation (including contested neutral and uncontested hold behavior)
 - Confirm corpse frame index is consistent across all spritesheets
 - Verify AoO edge cases (multiple adjacent enemies, AoO + dodge + death) during full matches
+- Validate round-start poison timing vs animation feel
 
 ## Immediate next steps
-1. Review `tileDefs.basicmap.stub.json` and assign correct terrain categories (stairs/roads/water/cliffs)
-2. Validate objective marker placements from gid 708 in BasicMap
-3. Tune `GameConfig.TILE_SIZE` and animation timing for desired readability/feel
-4. Comprehensive gameplay testing (full match from start to finish, including AoO and animations)
+1. Polish ability animations and integrate with ActionQueue
+2. Add ability-specific UI indicators (icons, cooldowns)
+3. Add status effect visuals (tints/overlays)
+4. Comprehensive gameplay testing with abilities and triggers
 
 ## Implementation guidance
 - Config remains source-of-truth for all tunable values

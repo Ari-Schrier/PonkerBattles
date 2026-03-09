@@ -124,6 +124,7 @@ export class MovementController {
     const isDash = unit.hasUsedMovement && !unit.hasUsedMainAction;
     const sprite = this.unitController.getSprite(unit.id);
     const healthText = this.unitController.getHealthText(unit.id);
+    const statusIndicator = this.unitController.getStatusIndicator(unit.id);
 
     if (!sprite) {
       return;
@@ -144,7 +145,7 @@ export class MovementController {
       }));
     });
 
-    steps.push(...this.buildMovementSteps(unit, path, sprite, healthText, () => unitKilled));
+    steps.push(...this.buildMovementSteps(unit, path, sprite, healthText, statusIndicator, () => unitKilled));
 
     steps.push(() => {
       if (unitKilled) {
@@ -182,6 +183,7 @@ export class MovementController {
     path: Position[],
     sprite: Phaser.GameObjects.Sprite,
     healthText: Phaser.GameObjects.Text | undefined,
+    statusIndicator: Phaser.GameObjects.Sprite | undefined,
     wasKilled: () => boolean
   ): ActionStep[] {
     const steps: ActionStep[] = [];
@@ -195,7 +197,7 @@ export class MovementController {
           resolve();
           return;
         }
-        this.executeMovementSegment(unit, from, to, sprite, healthText, resolve);
+        this.executeMovementSegment(unit, from, to, sprite, healthText, statusIndicator, resolve);
       }));
     }
 
@@ -208,6 +210,7 @@ export class MovementController {
     to: Position,
     sprite: Phaser.GameObjects.Sprite,
     healthText: Phaser.GameObjects.Text | undefined,
+    statusIndicator: Phaser.GameObjects.Sprite | undefined,
     onComplete: () => void
   ): void {
     const direction = AnimationManager.getDirection(from, to);
@@ -236,6 +239,16 @@ export class MovementController {
         ease: 'Linear'
       });
     }
+
+    if (statusIndicator) {
+      this.scene.tweens.add({
+        targets: statusIndicator,
+        x: targetX,
+        y: targetY,
+        duration: GameConfig.MOVEMENT_DURATION_MS,
+        ease: 'Linear'
+      });
+    }
   }
 
   private processAttackOfOpportunity(
@@ -252,6 +265,7 @@ export class MovementController {
       }
 
       const attackerSprite = this.unitController.getSprite(attacker.id);
+      const movingIndicator = this.unitController.getStatusIndicator(movingUnit.id);
       if (!attackerSprite) {
         resolve();
         return;
@@ -327,6 +341,16 @@ export class MovementController {
                   ease: 'Quad.easeIn'
                 });
               }
+
+              if (movingIndicator) {
+                this.scene.tweens.add({
+                  targets: movingIndicator,
+                  x: originalX,
+                  y: originalY,
+                  duration: GameConfig.DODGE_DURATION_MS,
+                  ease: 'Quad.easeIn'
+                });
+              }
             }
           });
 
@@ -335,6 +359,16 @@ export class MovementController {
               targets: movingHealthText,
               x: originalX + dodgeOffset.x,
               y: originalY + dodgeOffset.y - GameConfig.TILE_SIZE * 0.4,
+              duration: GameConfig.DODGE_DURATION_MS,
+              ease: 'Quad.easeOut'
+            });
+          }
+
+          if (movingIndicator) {
+            this.scene.tweens.add({
+              targets: movingIndicator,
+              x: originalX + dodgeOffset.x,
+              y: originalY + dodgeOffset.y,
               duration: GameConfig.DODGE_DURATION_MS,
               ease: 'Quad.easeOut'
             });

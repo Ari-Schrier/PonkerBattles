@@ -13,7 +13,8 @@
       "evasion": 0,
       "armor": 0
     },
-    "startPosition": { "x": 18, "y": 3 }
+    "startPosition": { "x": 18, "y": 3 },
+    "abilities": ["fireball"]
   },
   {
     "id": "red_soldier",
@@ -45,6 +46,7 @@
       "evasion": 0,
       "armor": 0
     },
-    "startPosition": { "x": 18, "y": 18 }
+    "startPosition": { "x": 18, "y": 18 },
+    "abilities": ["poison_strike"]
   }
 ]
