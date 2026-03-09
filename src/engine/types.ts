@@ -26,7 +26,7 @@ export interface Unit {
   spriteKey: string;
   stats: UnitStats;
   position: Position;
-  currentDirection: number; // 0-7: 0=down, 1=down-right, 2=right, 3=up-right, 4=up, 5=up-left, 6=left, 7=down-left
+  currentDirection: Direction;
   hasActivated: boolean;
   hasUsedMovement: boolean;
   hasUsedMainAction: boolean;
@@ -43,6 +43,17 @@ export interface Tile {
 export interface TileAnimationFrame {
   frame: number;
   duration: number;
+}
+
+export enum Direction {
+  Down = 0,
+  DownRight = 1,
+  Right = 2,
+  UpRight = 3,
+  Up = 4,
+  UpLeft = 5,
+  Left = 6,
+  DownLeft = 7
 }
 
 export type TerrainCategory = 'land' | 'forest' | 'cliff' | 'water';

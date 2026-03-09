@@ -1,7 +1,7 @@
 # Active Context
 
 ## Current focus
-Animation and movement upgrades for MVP: directional sprite animations, path-based movement, dodge visuals on misses, and attacks of opportunity with proper turn resolution.
+Refactor passes to improve maintainability: controller extraction, action sequencing via queue, terrain rules boundary, and Direction enum replacement.
 
 ## Confirmed decisions
 - Phaser 3 engine with TypeScript
@@ -44,6 +44,9 @@ Animation and movement upgrades for MVP: directional sprite animations, path-bas
 12. ✅ A* pathfinding for obstacle-aware movement with segment-based tweening
 13. ✅ Dodge animation on missed attacks
 14. ✅ Attacks of opportunity (AoO) when moving away from adjacent enemies
+15. ✅ Scene controllers split (Unit/UI/Movement/Combat) and ActionQueue sequencing
+16. ✅ Terrain rules moved to `TerrainRules` module
+17. ✅ Direction enum replaces numeric direction values across engine/controllers/tests
 
 ## Current state
 - Game loop is functional: unit selection → movement/attack → alternating activations → round end → winner determination
@@ -55,6 +58,9 @@ Animation and movement upgrades for MVP: directional sprite animations, path-bas
 - UI displays round, active team, objective scores, and selected unit info (action status included)
 - Units show HP labels above them; activated units are dimmed; defeated units display corpse frame
 - Rendering scale is controlled by `GameConfig.TILE_SIZE` (tilemap layers scale from 16px source tiles)
+- Movement/combat sequencing uses shared ActionQueue for animations
+- Terrain walkability and movement costs are centralized in `TerrainRules`
+- Direction is now an enum (`Direction`) instead of magic numbers
 - AoO triggers once at movement start (adjacent enemies at start who are not adjacent at destination)
 - AoO deaths now end the moving unit's activation and leave the corpse frame visible
 

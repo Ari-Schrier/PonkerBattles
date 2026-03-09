@@ -1,9 +1,11 @@
 import Phaser from 'phaser';
 import { GameConfig } from '@config/gameConfig';
-import type { MapDefinition, Position, TerrainCategory, TileDefinition, Unit } from '@engine/types';
+import type { MapDefinition, Position, Unit } from '@engine/types';
+import { Direction } from '@engine/types';
 import { MovementEngine } from '@engine/MovementEngine';
 import { CombatResolver } from '@engine/CombatResolver';
 import { AnimationManager } from '@engine/AnimationManager';
+import type { TerrainRules } from '@engine/TerrainRules';
 import type { UnitController } from './UnitController';
 import type { ActionQueue, ActionStep } from './ActionQueue';
 
@@ -16,19 +18,19 @@ export class MovementController {
   private actionQueue: ActionQueue;
   private highlightGraphics: Phaser.GameObjects.Graphics;
   private mapDefinition: MapDefinition;
-  private tileDefLookup: Map<number, TileDefinition>;
+  private terrainRules: TerrainRules;
 
   constructor(
     scene: Phaser.Scene,
     unitController: UnitController,
     mapDefinition: MapDefinition,
-    tileDefLookup: Map<number, TileDefinition>,
+    terrainRules: TerrainRules,
     actionQueue: ActionQueue
   ) {
     this.scene = scene;
     this.unitController = unitController;
     this.mapDefinition = mapDefinition;
-    this.tileDefLookup = tileDefLookup;
+    this.terrainRules = terrainRules;
     this.actionQueue = actionQueue;
     this.highlightGraphics = this.scene.add.graphics();
   }
@@ -363,23 +365,23 @@ export class MovementController {
     return enemiesWithAoO;
   }
 
-  private calculateDodgeOffset(attackDirection: number): { x: number; y: number } {
+  private calculateDodgeOffset(attackDirection: Direction): { x: number; y: number } {
     const offset = GameConfig.DODGE_OFFSET_PIXELS;
 
     switch (attackDirection) {
-      case 0:
-      case 4:
+      case Direction.Down:
+      case Direction.Up:
         return { x: offset, y: 0 };
-      case 1:
+      case Direction.DownRight:
         return { x: offset, y: -offset };
-      case 2:
-      case 6:
+      case Direction.Right:
+      case Direction.Left:
         return { x: 0, y: -offset };
-      case 3:
+      case Direction.UpRight:
         return { x: offset, y: offset };
-      case 5:
+      case Direction.UpLeft:
         return { x: -offset, y: offset };
-      case 7:
+      case Direction.DownLeft:
         return { x: -offset, y: -offset };
       default:
         return { x: offset, y: 0 };
@@ -388,46 +390,9 @@ export class MovementController {
 
   private getMovementOptions(): { isWalkable?: (pos: Position) => boolean; getMoveCost?: (pos: Position) => number } {
     return {
-      isWalkable: pos => {
-        const def = this.getLogicalTileDef(pos);
-        if (!def) {
-          return true;
-        }
-        return this.isWalkable(def.terrainType);
-      },
-      getMoveCost: pos => {
-        const def = this.getLogicalTileDef(pos);
-        if (!def) {
-          return 1;
-        }
-        return this.getMoveCost(def.terrainType);
-      }
+      isWalkable: pos => this.terrainRules.isWalkable(pos),
+      getMoveCost: pos => this.terrainRules.getMoveCost(pos)
     };
-  }
-
-  private getLogicalTileDef(pos: Position): TileDefinition | undefined {
-    const index = pos.y * this.mapDefinition.width + pos.x;
-    const overlayGid = this.mapDefinition.overlayLayer[index];
-    const groundGid = this.mapDefinition.groundLayer[index];
-    const gid = overlayGid && overlayGid !== 0 ? overlayGid : groundGid;
-    return gid ? this.tileDefLookup.get(gid) : undefined;
-  }
-
-  private isWalkable(category: TerrainCategory): boolean {
-    return category === 'land' || category === 'forest';
-  }
-
-  private getMoveCost(category: TerrainCategory): number {
-    switch (category) {
-      case 'forest':
-        return 2;
-      case 'cliff':
-      case 'water':
-        return Number.POSITIVE_INFINITY;
-      case 'land':
-      default:
-        return 1;
-    }
   }
 
   private getOccupiedPositions(units: Unit[], unitId: string): Map<string, boolean> {

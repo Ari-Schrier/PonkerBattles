@@ -1,7 +1,7 @@
 # Progress
 
 ## Current status
-Core MVC gameplay loop now includes full animation support, A* path-based movement, dodge feedback on misses, and attacks of opportunity with correct turn resolution. Map pipeline loads BasicMap.tmj with explicit tileDefs mapping and configurable render scale.
+Core MVC gameplay loop now includes full animation support, A* path-based movement, dodge feedback on misses, and attacks of opportunity with correct turn resolution. Map pipeline loads BasicMap.tmj with explicit tileDefs mapping and configurable render scale. Recent refactors introduced scene controllers, ActionQueue sequencing, TerrainRules, and Direction enum.
 
 ## Completed
 
@@ -46,6 +46,12 @@ Core MVC gameplay loop now includes full animation support, A* path-based moveme
   - Activation dimming (sprite + HP text)
   - Corpse frame on unit defeat (index 24), including AoO deaths
 - **ResultsScene.ts**: Winner announcement, color-coded results, click-to-restart
+
+### Refactors (2026-03-09)
+- **Scene controllers**: UnitController, UIController, MovementController, CombatController
+- **ActionQueue** for sequential action execution
+- **TerrainRules** module for walkability + movement cost
+- **Direction enum** replacing numeric direction values
 
 ### Asset Integration
 - Fixed spritesheet loading issue: Changed from `load.image()` to `load.spritesheet()` with 32x32 frame configuration
@@ -123,3 +129,4 @@ Core MVC gameplay loop now includes full animation support, A* path-based moveme
 - 2026-03-02: Memory bank updated post-implementation
 - 2026-03-06: Added two-action economy, HP labels, activation dimming, and corpse frames; fixed attack repeat bug
 - 2026-03-08: Integrated BasicMap.tmj, generated tileDefs stub, added objective marker parsing, and made render scale configurable via TILE_SIZE
+- 2026-03-09: Extracted scene controllers, added ActionQueue sequencing, centralized TerrainRules, and replaced direction numbers with Direction enum

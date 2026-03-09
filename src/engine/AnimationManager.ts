@@ -4,20 +4,20 @@
  */
 
 import Phaser from 'phaser';
-import type { Position } from './types';
+import { Direction, type Position } from './types';
 
 export class AnimationManager {
   /**
    * Calculate the direction (0-7) from one position to another
    * 0=down, 1=down-right, 2=right, 3=up-right, 4=up, 5=up-left, 6=left, 7=down-left
    */
-  static getDirection(from: Position, to: Position): number {
+  static getDirection(from: Position, to: Position): Direction {
     const dx = to.x - from.x;
     const dy = to.y - from.y;
     
     // Handle same position
     if (dx === 0 && dy === 0) {
-      return 0; // Default to down
+      return Direction.Down; // Default to down
     }
 
     // Calculate angle in radians
@@ -37,15 +37,15 @@ export class AnimationManager {
     // 315° (up-right) -> direction 3
     
     const directionMap = [
-      { min: 337.5, max: 360, dir: 2 },   // right
-      { min: 0, max: 22.5, dir: 2 },      // right
-      { min: 22.5, max: 67.5, dir: 1 },   // down-right
-      { min: 67.5, max: 112.5, dir: 0 },  // down
-      { min: 112.5, max: 157.5, dir: 7 }, // down-left
-      { min: 157.5, max: 202.5, dir: 6 }, // left
-      { min: 202.5, max: 247.5, dir: 5 }, // up-left
-      { min: 247.5, max: 292.5, dir: 4 }, // up
-      { min: 292.5, max: 337.5, dir: 3 }  // up-right
+      { min: 337.5, max: 360, dir: Direction.Right },   // right
+      { min: 0, max: 22.5, dir: Direction.Right },      // right
+      { min: 22.5, max: 67.5, dir: Direction.DownRight },   // down-right
+      { min: 67.5, max: 112.5, dir: Direction.Down },  // down
+      { min: 112.5, max: 157.5, dir: Direction.DownLeft }, // down-left
+      { min: 157.5, max: 202.5, dir: Direction.Left }, // left
+      { min: 202.5, max: 247.5, dir: Direction.UpLeft }, // up-left
+      { min: 247.5, max: 292.5, dir: Direction.Up }, // up
+      { min: 292.5, max: 337.5, dir: Direction.UpRight }  // up-right
     ];
     
     for (const range of directionMap) {
@@ -54,7 +54,7 @@ export class AnimationManager {
       }
     }
     
-    return 0; // Fallback to down
+    return Direction.Down; // Fallback to down
   }
 
   /**
@@ -151,7 +151,7 @@ export class AnimationManager {
     sprite: Phaser.GameObjects.Sprite,
     spriteKey: string,
     animationType: 'walk' | 'attack' | 'damage' | 'death' | 'idle',
-    direction: number
+    direction: Direction
   ): void {
     const animKey = `${spriteKey}-${animationType}-${direction}`;
     sprite.play(animKey);
@@ -163,7 +163,7 @@ export class AnimationManager {
   static stopAnimation(
     sprite: Phaser.GameObjects.Sprite,
     _spriteKey: string,
-    direction: number
+    direction: Direction
   ): void {
     sprite.stop();
     sprite.setFrame(direction * 29); // Set to first frame of direction row

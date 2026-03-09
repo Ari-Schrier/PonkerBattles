@@ -22,12 +22,20 @@ Use a **data-driven Phaser architecture** so game balance values live in config,
 - **CombatResolver** (`src/engine/CombatResolver.ts`): Hit resolution, damage calculation using config formulas
 - **MovementEngine** (`src/engine/MovementEngine.ts`): Legal move calculation with flood-fill pathfinding
 - **ObjectiveController** (`src/engine/ObjectiveController.ts`): Control radius checks, majority determination, scoring
+- **TerrainRules** (`src/engine/TerrainRules.ts`): Walkability and movement cost rules derived from map + tile definitions
 - **Type definitions** (`src/engine/types.ts`): Shared interfaces for Unit, GameState, Objective, Position, etc.
 
 ### Presentation Layer (Phaser Scenes)
 - **PreloadScene** (`src/scenes/PreloadScene.ts`): Asset loading with spritesheets
 - **BattleScene** (`src/scenes/BattleScene.ts`): Map rendering, unit display, input handling, visual feedback
 - **ResultsScene** (`src/scenes/ResultsScene.ts`): Winner announcement and restart
+
+### Scene Controllers (Presentation Helpers)
+- **ActionQueue** (`src/scenes/controllers/ActionQueue.ts`): Sequential action execution for movement/combat
+- **UnitController**: Unit sprites + health label management
+- **UIController**: HUD and objective visuals
+- **MovementController**: Movement + AoO sequencing, range highlights, movement rules delegation
+- **CombatController**: Attack sequencing, hit/miss animations
 
 ## Key implementation patterns
 
@@ -49,6 +57,8 @@ Combat and control checks are deterministic given inputs:
 CombatResolver.resolveAttack(attacker, defender) → AttackResult
 ObjectiveController.determineControl(objective, units) → Team | null
 MovementEngine.getLegalMoves(unit, occupied, mapSize) → Position[]
+TerrainRules.isWalkable(pos) → boolean
+TerrainRules.getMoveCost(pos) → number
 ```
 
 ### 3. State machine for turn flow
@@ -64,6 +74,10 @@ Implemented in `TurnManager` with clear phase transitions.
 - **Scenes**: Handle rendering, input, visual feedback
 - **Data flow**: Scene → Engine (for validation) → Scene updates
 Example: `BattleScene` calls `MovementEngine.getLegalMoves()` then renders highlights
+
+### 5. Action sequencing via queue
+- `ActionQueue` ensures movement/attack/AoO steps execute sequentially without nested callbacks.
+- Controllers enqueue animation steps as Promises.
 
 ### 5. Spritesheet management
 - Load with `load.spritesheet()` specifying 32×32 frames
@@ -120,9 +134,10 @@ Central state object passed to TurnManager:
 
 ## Movement + combat animation pattern
 - `AnimationManager` centralizes animation creation and direction logic
-- `BattleScene` uses A* pathfinding + segmented tweening for movement
-- Attacks play animation first, then resolve combat and trigger damage/death/dodge
-- Attacks of opportunity trigger once at movement start, then movement continues
+- `ActionQueue` sequences movement and combat steps
+- `MovementController` uses A* pathfinding + queued tweening for movement
+- `CombatController` plays attack animation then resolves combat and reactions
+- Attacks of opportunity enqueue before movement segments
 - AoO deaths end activation immediately and keep corpse frame
 
 ## Future-ready considerations (post-MVC)

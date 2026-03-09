@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { MovementEngine } from './MovementEngine';
 import { GameConfig } from '@config/gameConfig';
 import type { Unit } from './types';
+import { Direction } from './types';
 
 const buildUnit = (overrides: Partial<Unit> = {}): Unit => ({
   id: 'unit',
@@ -18,7 +19,7 @@ const buildUnit = (overrides: Partial<Unit> = {}): Unit => ({
     armor: 1
   },
   position: { x: 1, y: 1 },
-  currentDirection: 0,
+  currentDirection: Direction.Down,
   hasActivated: false,
   hasUsedMovement: false,
   hasUsedMainAction: false,

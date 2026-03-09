@@ -6,10 +6,12 @@
 import Phaser from 'phaser';
 import { GameConfig } from '@config/gameConfig';
 import type { Unit, GameState, Objective, Position, MapData, MapDefinition, TileDefinition } from '@engine/types';
+import { Direction } from '@engine/types';
 import { TurnManager } from '@engine/TurnManager';
 import { ObjectiveController } from '@engine/ObjectiveController';
 import { MapLoader } from '@data/maps/MapLoader';
 import { MovementEngine } from '@engine/MovementEngine';
+import { TerrainRules } from '@engine/TerrainRules';
 import { UnitController } from './controllers/UnitController';
 import { UIController } from './controllers/UIController';
 import { MovementController } from './controllers/MovementController';
@@ -28,6 +30,7 @@ export class BattleScene extends Phaser.Scene {
   private movementController!: MovementController;
   private combatController!: CombatController;
   private actionQueue!: ActionQueue;
+  private terrainRules!: TerrainRules;
 
   constructor() {
     super({ key: 'BattleScene' });
@@ -55,13 +58,14 @@ export class BattleScene extends Phaser.Scene {
 
     // Create controllers
     this.actionQueue = new ActionQueue();
+    this.terrainRules = new TerrainRules(this.mapDefinition, this.mapDefinition.tileDefs);
     this.unitController = new UnitController(this);
     this.uiController = new UIController(this);
     this.movementController = new MovementController(
       this,
       this.unitController,
       this.mapDefinition,
-      this.tileDefLookup,
+      this.terrainRules,
       this.actionQueue
     );
     this.combatController = new CombatController(this, this.unitController, this.actionQueue);
@@ -104,7 +108,7 @@ export class BattleScene extends Phaser.Scene {
         spriteKey: unitData.spriteKey,
         stats: { ...unitData.stats },
         position: { ...unitData.startPosition },
-        currentDirection: 0, // Default to facing down
+        currentDirection: Direction.Down,
         hasActivated: false,
         hasUsedMovement: false,
         hasUsedMainAction: false

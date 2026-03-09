@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GameConfig } from '@config/gameConfig';
 import type { Unit } from '@engine/types';
+import { Direction } from '@engine/types';
 import { CombatResolver } from '@engine/CombatResolver';
 import { AnimationManager } from '@engine/AnimationManager';
 import type { UnitController } from './UnitController';
@@ -111,7 +112,7 @@ export class CombatController {
   private playDodgeAnimation(
     attackerSprite: Phaser.GameObjects.Sprite,
     defenderSprite: Phaser.GameObjects.Sprite,
-    attackDirection: number,
+    attackDirection: Direction,
     defender: Unit
   ): Promise<void> {
     return new Promise(resolve => {
@@ -164,23 +165,23 @@ export class CombatController {
     });
   }
 
-  private calculateDodgeOffset(attackDirection: number): { x: number; y: number } {
+  private calculateDodgeOffset(attackDirection: Direction): { x: number; y: number } {
     const offset = GameConfig.DODGE_OFFSET_PIXELS;
 
     switch (attackDirection) {
-      case 0:
-      case 4:
+      case Direction.Down:
+      case Direction.Up:
         return { x: offset, y: 0 };
-      case 1:
+      case Direction.DownRight:
         return { x: offset, y: -offset };
-      case 2:
-      case 6:
+      case Direction.Right:
+      case Direction.Left:
         return { x: 0, y: -offset };
-      case 3:
+      case Direction.UpRight:
         return { x: offset, y: offset };
-      case 5:
+      case Direction.UpLeft:
         return { x: -offset, y: offset };
-      case 7:
+      case Direction.DownLeft:
         return { x: -offset, y: -offset };
       default:
         return { x: offset, y: 0 };
