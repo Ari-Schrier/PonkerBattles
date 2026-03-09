@@ -162,7 +162,7 @@ export class AnimationManager {
    */
   static stopAnimation(
     sprite: Phaser.GameObjects.Sprite,
-    spriteKey: string,
+    _spriteKey: string,
     direction: number
   ): void {
     sprite.stop();

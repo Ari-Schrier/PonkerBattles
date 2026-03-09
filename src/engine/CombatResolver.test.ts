@@ -18,6 +18,7 @@ const buildUnit = (overrides: Partial<Unit> = {}): Unit => ({
     armor: 1
   },
   position: { x: 0, y: 0 },
+  currentDirection: 0,
   hasActivated: false,
   hasUsedMovement: false,
   hasUsedMainAction: false,

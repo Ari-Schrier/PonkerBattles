@@ -5,13 +5,16 @@
 
 import Phaser from 'phaser';
 import { GameConfig } from '@config/gameConfig';
-import type { Unit, GameState, Objective, Position, MapData, MapDefinition, TileDefinition, TerrainCategory } from '@engine/types';
+import type { Unit, GameState, Objective, Position, MapData, MapDefinition, TileDefinition } from '@engine/types';
 import { TurnManager } from '@engine/TurnManager';
-import { MovementEngine } from '@engine/MovementEngine';
-import { CombatResolver } from '@engine/CombatResolver';
 import { ObjectiveController } from '@engine/ObjectiveController';
 import { MapLoader } from '@data/maps/MapLoader';
-import { AnimationManager } from '@engine/AnimationManager';
+import { MovementEngine } from '@engine/MovementEngine';
+import { UnitController } from './controllers/UnitController';
+import { UIController } from './controllers/UIController';
+import { MovementController } from './controllers/MovementController';
+import { CombatController } from './controllers/CombatController';
+import { ActionQueue } from './controllers/ActionQueue';
 
 export class BattleScene extends Phaser.Scene {
   private map!: Phaser.Tilemaps.Tilemap;
@@ -19,12 +22,12 @@ export class BattleScene extends Phaser.Scene {
   private tileDefLookup: Map<number, TileDefinition> = new Map();
   private gameState!: GameState;
   private turnManager!: TurnManager;
-  private unitSprites: Map<string, Phaser.GameObjects.Sprite> = new Map();
-  private healthTexts: Map<string, Phaser.GameObjects.Text> = new Map();
-  private objectiveSprites: Phaser.GameObjects.Graphics[] = [];
   private selectedUnit: Unit | null = null;
-  private highlightGraphics!: Phaser.GameObjects.Graphics;
-  private uiText!: Phaser.GameObjects.Text;
+  private unitController!: UnitController;
+  private uiController!: UIController;
+  private movementController!: MovementController;
+  private combatController!: CombatController;
+  private actionQueue!: ActionQueue;
 
   constructor() {
     super({ key: 'BattleScene' });
@@ -36,7 +39,7 @@ export class BattleScene extends Phaser.Scene {
     // Create tilemap
     this.map = this.make.tilemap({ key: 'basicMap' });
     const tileset = this.map.addTilesetImage('punyworld-overworld-tileset', 'world-tileset');
-    
+
     if (tileset) {
       const groundLayer = this.map.createLayer('Tile Layer 1', tileset, 0, 0);
       const overlayLayer = this.map.createLayer('Tile Layer 2', tileset, 0, 0);
@@ -49,26 +52,35 @@ export class BattleScene extends Phaser.Scene {
 
     // Initialize game state
     this.initializeGameState();
-    
+
+    // Create controllers
+    this.actionQueue = new ActionQueue();
+    this.unitController = new UnitController(this);
+    this.uiController = new UIController(this);
+    this.movementController = new MovementController(
+      this,
+      this.unitController,
+      this.mapDefinition,
+      this.tileDefLookup,
+      this.actionQueue
+    );
+    this.combatController = new CombatController(this, this.unitController, this.actionQueue);
+
     // Create turn manager
     this.turnManager = new TurnManager(this.gameState, () => {
       ObjectiveController.updateObjectiveControl(this.gameState.objectives, this.gameState.units);
-      this.updateObjectiveVisuals();
+      this.uiController.updateObjectiveVisuals(this.gameState);
     });
     this.turnManager.startGame();
 
-    // Create graphics for highlights
-    this.highlightGraphics = this.add.graphics();
-
     // Place objectives
-    this.createObjectives();
+    this.uiController.createObjectives(this.gameState);
 
     // Place units
-    this.createUnits();
-
+    this.unitController.createUnits(this.gameState.units);
 
     // Create UI
-    this.createUI();
+    this.uiController.createUI();
 
     // Enable input
     this.input.on('pointerdown', this.handleClick, this);
@@ -82,7 +94,7 @@ export class BattleScene extends Phaser.Scene {
 
     // Create units
     const units: Unit[] = [];
-    
+
     [...blueTeamData, ...redTeamData].forEach((unitData: any) => {
       units.push({
         id: unitData.id,
@@ -116,85 +128,21 @@ export class BattleScene extends Phaser.Scene {
     };
   }
 
-  private createObjectives(): void {
-    this.gameState.objectives.forEach(objective => {
-      const x = objective.position.x * GameConfig.TILE_SIZE + GameConfig.TILE_SIZE / 2;
-      const y = objective.position.y * GameConfig.TILE_SIZE + GameConfig.TILE_SIZE / 2;
-      
-      const graphics = this.add.graphics();
-      const radius = GameConfig.TILE_SIZE * 0.2;
-      graphics.lineStyle(2, 0xffff00, 1);
-      graphics.strokeCircle(x, y, radius);
-      graphics.fillStyle(0xffff00, 0.3);
-      graphics.fillCircle(x, y, radius);
-      
-      this.objectiveSprites.push(graphics);
-    });
-  }
-
-  private createUnits(): void {
-    this.gameState.units.forEach(unit => {
-      const x = unit.position.x * GameConfig.TILE_SIZE + GameConfig.TILE_SIZE / 2;
-      const y = unit.position.y * GameConfig.TILE_SIZE + GameConfig.TILE_SIZE / 2;
-      
-      const sprite = this.add.sprite(x, y, unit.spriteKey);
-      sprite.setDisplaySize(GameConfig.TILE_SIZE, GameConfig.TILE_SIZE);
-      sprite.setData('unit', unit);
-      sprite.disableInteractive();
-      
-      // Show idle animation for initial direction
-      AnimationManager.playAnimation(sprite, unit.spriteKey, 'idle', unit.currentDirection);
-      
-      this.unitSprites.set(unit.id, sprite);
-
-      // Create health text above unit
-      const healthText = this.add.text(x, y - GameConfig.TILE_SIZE * 0.4, `${unit.stats.hp}/${unit.stats.maxHp}`, {
-        fontSize: `${Math.max(12, Math.round(GameConfig.TILE_SIZE * 0.25))}px`,
-        color: '#ffffff',
-        backgroundColor: '#000000',
-        padding: { x: 2, y: 2 }
-      });
-      healthText.setOrigin(0.5, 0.5); // Center the text
-      
-      this.healthTexts.set(unit.id, healthText);
-    });
-  }
-
-  private createUI(): void {
-    this.uiText = this.add.text(10, 10, '', {
-      fontSize: `${Math.max(14, Math.round(GameConfig.TILE_SIZE * 0.25))}px`,
-      color: '#ffffff',
-      backgroundColor: '#000000',
-      padding: { x: 10, y: 10 }
-    });
-  }
-
   private updateUI(): void {
-    const round = this.gameState.currentRound;
-    const activeTeam = this.gameState.activeTeam;
-    const scores = ObjectiveController.getObjectiveScores(this.gameState.objectives);
-    
-    const text = [
-      `Round: ${round}/${GameConfig.MAX_ROUNDS}`,
-      `Active Team: ${activeTeam.toUpperCase()}`,
-      `Blue Objectives: ${scores.get(GameConfig.TEAMS.BLUE)}`,
-      `Red Objectives: ${scores.get(GameConfig.TEAMS.RED)}`
-    ];
-
     if (this.selectedUnit) {
       const movementStatus = this.selectedUnit.hasUsedMovement ? '✓' : 'Available';
       const mainActionStatus = this.selectedUnit.hasUsedMainAction ? '✓' : 'Available';
-      
-      text.push(
-        '',
-        `Selected: ${this.selectedUnit.name}`,
-        `HP: ${this.selectedUnit.stats.hp}/${this.selectedUnit.stats.maxHp}`,
-        `Movement: ${movementStatus}`,
-        `Main Action: ${mainActionStatus}`
-      );
-    }
 
-    this.uiText.setText(text.join('\n'));
+      this.uiController.updateUI(
+        this.gameState,
+        this.selectedUnit.name,
+        `${this.selectedUnit.stats.hp}/${this.selectedUnit.stats.maxHp}`,
+        movementStatus,
+        mainActionStatus
+      );
+    } else {
+      this.uiController.updateUI(this.gameState);
+    }
   }
 
   private handleClick(pointer: Phaser.Input.Pointer): void {
@@ -202,7 +150,7 @@ export class BattleScene extends Phaser.Scene {
     const tileY = Math.floor(pointer.worldY / GameConfig.TILE_SIZE);
 
     // Check if clicking on a unit
-    const clickedUnit = this.getUnitAtPosition({ x: tileX, y: tileY });
+    const clickedUnit = this.unitController.getUnitAtPosition(this.gameState.units, { x: tileX, y: tileY });
 
     if (this.selectedUnit) {
       // Unit is already selected
@@ -215,13 +163,13 @@ export class BattleScene extends Phaser.Scene {
           this.deselectUnit();
         }
       } else if (clickedUnit && clickedUnit.team !== this.selectedUnit.team) {
-        if (this.canUnitAttack(this.selectedUnit)) {
+        if (this.movementController.canUnitAttack(this.selectedUnit)) {
           // Attack enemy
           this.attemptAttack(this.selectedUnit, clickedUnit);
         }
       } else {
         // Try to move
-        if (this.canUnitMove(this.selectedUnit)) {
+        if (this.movementController.canUnitMove(this.selectedUnit)) {
           this.attemptMove(this.selectedUnit, { x: tileX, y: tileY });
         }
       }
@@ -237,611 +185,58 @@ export class BattleScene extends Phaser.Scene {
     return unit.team === this.gameState.activeTeam && !unit.hasActivated && unit.stats.hp > 0;
   }
 
-  private canUnitTakeMove(unit: Unit): boolean {
-    return unit.stats.hp > 0 && !unit.hasUsedMovement;
-  }
-
-  private canUnitDash(unit: Unit): boolean {
-    return unit.stats.hp > 0 && unit.hasUsedMovement && !unit.hasUsedMainAction;
-  }
-
-  private canUnitMove(unit: Unit): boolean {
-    return this.canUnitTakeMove(unit) || this.canUnitDash(unit);
-  }
-
-  private canUnitAttack(unit: Unit): boolean {
-    return unit.stats.hp > 0 && !unit.hasUsedMainAction;
-  }
-
   private selectUnit(unit: Unit): void {
     this.selectedUnit = unit;
-    this.showMovementRange(unit);
+    this.movementController.showMovementRange(unit, this.gameState.units);
     this.updateUI();
   }
 
   private deselectUnit(): void {
     this.selectedUnit = null;
-    this.highlightGraphics.clear();
+    this.movementController.clearHighlights();
     this.updateUI();
   }
 
-  private showMovementRange(unit: Unit): void {
-    this.highlightGraphics.clear();
-
-    // Get occupied positions
-    const occupiedPositions = new Map<string, boolean>();
-    this.gameState.units.forEach(u => {
-      if (u.id !== unit.id && u.stats.hp > 0) {
-        occupiedPositions.set(`${u.position.x},${u.position.y}`, true);
-      }
-    });
-
-    // Show movement highlights if movement action available
-    if (this.canUnitTakeMove(unit)) {
-      const legalMoves = MovementEngine.getLegalMoves(
-        unit,
-        occupiedPositions,
-        this.mapDefinition.width,
-        this.mapDefinition.height,
-        this.getMovementOptions()
-      );
-
-      // Green highlights for normal movement
-      this.highlightGraphics.fillStyle(0x00ff00, 0.3);
-      legalMoves.forEach(pos => {
-        const x = pos.x * GameConfig.TILE_SIZE;
-        const y = pos.y * GameConfig.TILE_SIZE;
-        this.highlightGraphics.fillRect(x, y, GameConfig.TILE_SIZE, GameConfig.TILE_SIZE);
-      });
-    }
-
-    // Show dash highlights if movement used but main action available
-    if (this.canUnitDash(unit)) {
-      const dashMoves = MovementEngine.getLegalMoves(
-        unit,
-        occupiedPositions,
-        this.mapDefinition.width,
-        this.mapDefinition.height,
-        this.getMovementOptions()
-      );
-
-      // Blue highlights for dash movement
-      this.highlightGraphics.fillStyle(0x0099ff, 0.3);
-      dashMoves.forEach(pos => {
-        const x = pos.x * GameConfig.TILE_SIZE;
-        const y = pos.y * GameConfig.TILE_SIZE;
-        this.highlightGraphics.fillRect(x, y, GameConfig.TILE_SIZE, GameConfig.TILE_SIZE);
-      });
-    }
-
-    // Show attackable enemies if main action available
-    if (this.canUnitAttack(unit)) {
-      const adjacentPositions = MovementEngine.getAdjacentPositions(unit.position);
-      this.highlightGraphics.fillStyle(0xff0000, 0.3);
-      adjacentPositions.forEach(pos => {
-        const enemy = this.getUnitAtPosition(pos);
-        if (enemy && enemy.team !== unit.team) {
-          const x = pos.x * GameConfig.TILE_SIZE;
-          const y = pos.y * GameConfig.TILE_SIZE;
-          this.highlightGraphics.fillRect(x, y, GameConfig.TILE_SIZE, GameConfig.TILE_SIZE);
-        }
-      });
-    }
-  }
-
   private attemptMove(unit: Unit, targetPos: Position): void {
-    // Get occupied positions
-    const occupiedPositions = new Map<string, boolean>();
-    this.gameState.units.forEach(u => {
-      if (u.id !== unit.id && u.stats.hp > 0) {
-        occupiedPositions.set(`${u.position.x},${u.position.y}`, true);
-      }
-    });
-
-    // Check if move is legal
-    const legalMoves = MovementEngine.getLegalMoves(
+    this.movementController.attemptMove(
       unit,
-      occupiedPositions,
-      this.mapDefinition.width,
-      this.mapDefinition.height,
-      this.getMovementOptions()
-    );
-
-    const isLegal = legalMoves.some(pos => pos.x === targetPos.x && pos.y === targetPos.y);
-
-    if (isLegal) {
-      // Find path from current position to target
-      const path = MovementEngine.findPath(
-        unit.position,
-        targetPos,
-        occupiedPositions,
-        this.mapDefinition.width,
-        this.mapDefinition.height,
-        this.getMovementOptions()
-      );
-
-      if (!path || path.length === 0) {
-        console.warn('No path found to destination');
-        return;
-      }
-
-      // Determine if this is normal movement or dash
-      const isDash = unit.hasUsedMovement && !unit.hasUsedMainAction;
-      
-      // Get sprite and health text
-      const sprite = this.unitSprites.get(unit.id);
-      const healthText = this.healthTexts.get(unit.id);
-      
-      if (!sprite) {
-        return;
-      }
-
-      // Clear highlights during movement
-      this.highlightGraphics.clear();
-      
-      // Animate along the path
-      this.animateAlongPath(unit, path, sprite, healthText, () => {
-        // Movement complete
-        // Update unit position in game state
-        unit.position = targetPos;
-        
-        // Mark appropriate action as used
-        if (isDash) {
-          unit.hasUsedMainAction = true;
+      targetPos,
+      this.gameState.units,
+      (movedUnit, wasDash) => {
+        if (wasDash) {
+          movedUnit.hasUsedMainAction = true;
         } else {
-          unit.hasUsedMovement = true;
+          movedUnit.hasUsedMovement = true;
         }
 
-        // Check if unit's turn is complete
-        if (this.isUnitTurnComplete(unit)) {
-          this.endUnitActivation(unit);
+        if (this.isUnitTurnComplete(movedUnit)) {
+          this.endUnitActivation(movedUnit);
         } else {
-          // Re-highlight available actions
-          this.showMovementRange(unit);
+          this.movementController.showMovementRange(movedUnit, this.gameState.units);
           this.updateUI();
         }
-      });
-    }
-  }
-
-  /**
-   * Animate a unit moving along a path, segment by segment
-   */
-  private animateAlongPath(
-    unit: Unit,
-    path: Position[],
-    sprite: Phaser.GameObjects.Sprite,
-    healthText: Phaser.GameObjects.Text | undefined,
-    onComplete: () => void
-  ): void {
-    // Check for attacks of opportunity ONCE at the start
-    // Compare starting position to final destination
-    const startPos = path[0];
-    const endPos = path[path.length - 1];
-    const enemiesWithAoO = this.getEnemiesWithAttackOfOpportunity(unit, startPos, endPos);
-    
-    if (enemiesWithAoO.length > 0) {
-      // Process all AoOs before any movement
-      this.processAttacksOfOpportunity(unit, enemiesWithAoO, 0, sprite, healthText, (alive) => {
-        // After all AoOs, check if unit is still alive
-        if (!alive) {
-          // Unit died from AoO - end activation immediately
-          this.endUnitActivation(unit);
-          onComplete();
-          return;
-        }
-
-        // Unit survived - proceed with movement
-        this.animatePathSegments(unit, path, sprite, healthText, onComplete);
-      });
-    } else {
-      // No AoO - proceed with movement immediately
-      this.animatePathSegments(unit, path, sprite, healthText, onComplete);
-    }
-  }
-
-  /**
-   * Animate the path segments without AoO checks
-   */
-  private animatePathSegments(
-    unit: Unit,
-    path: Position[],
-    sprite: Phaser.GameObjects.Sprite,
-    healthText: Phaser.GameObjects.Text | undefined,
-    onComplete: () => void
-  ): void {
-    // Path includes the starting position, so we start from index 1
-    let currentIndex = 1;
-
-    const animateNextSegment = () => {
-      if (currentIndex >= path.length) {
-        // Path complete - show idle animation
-        AnimationManager.playAnimation(sprite, unit.spriteKey, 'idle', unit.currentDirection);
-        onComplete();
-        return;
+      },
+      interruptedUnit => {
+        this.endUnitActivation(interruptedUnit);
       }
-
-      const from = path[currentIndex - 1];
-      const to = path[currentIndex];
-
-      // No AoO checks here - just move
-      this.executeMovementSegment(unit, from, to, sprite, healthText, () => {
-        currentIndex++;
-        animateNextSegment();
-      });
-    };
-
-    animateNextSegment();
-  }
-
-  /**
-   * Execute a single movement segment (actual tile-to-tile movement)
-   */
-  private executeMovementSegment(
-    unit: Unit,
-    from: Position,
-    to: Position,
-    sprite: Phaser.GameObjects.Sprite,
-    healthText: Phaser.GameObjects.Text | undefined,
-    onComplete: () => void
-  ): void {
-    // Calculate direction for this segment
-    const direction = AnimationManager.getDirection(from, to);
-    unit.currentDirection = direction;
-
-    // Play walk animation in the new direction
-    AnimationManager.playAnimation(sprite, unit.spriteKey, 'walk', direction);
-
-    // Calculate target position in pixels
-    const targetX = to.x * GameConfig.TILE_SIZE + GameConfig.TILE_SIZE / 2;
-    const targetY = to.y * GameConfig.TILE_SIZE + GameConfig.TILE_SIZE / 2;
-
-    // Tween sprite to next position
-    this.tweens.add({
-      targets: sprite,
-      x: targetX,
-      y: targetY,
-      duration: GameConfig.MOVEMENT_DURATION_MS,
-      ease: 'Linear',
-      onComplete: onComplete
-    });
-
-    // Tween health text alongside sprite
-    if (healthText) {
-      this.tweens.add({
-        targets: healthText,
-        x: targetX,
-        y: targetY - GameConfig.TILE_SIZE * 0.4,
-        duration: GameConfig.MOVEMENT_DURATION_MS,
-        ease: 'Linear'
-      });
-    }
-  }
-
-  /**
-   * Get enemies that should get an attack of opportunity
-   */
-  private getEnemiesWithAttackOfOpportunity(
-    movingUnit: Unit,
-    fromPos: Position,
-    toPos: Position
-  ): Unit[] {
-    const enemiesWithAoO: Unit[] = [];
-
-    // Get all living enemy units
-    const enemies = this.gameState.units.filter(
-      u => u.team !== movingUnit.team && u.stats.hp > 0
     );
-
-    for (const enemy of enemies) {
-      // Check if enemy is adjacent to the 'from' position
-      const wasAdjacent = MovementEngine.isAdjacent(enemy.position, fromPos);
-      
-      // Check if enemy is adjacent to the 'to' position
-      const willBeAdjacent = MovementEngine.isAdjacent(enemy.position, toPos);
-
-      // Trigger AoO if moving away (was adjacent, won't be adjacent)
-      if (wasAdjacent && !willBeAdjacent) {
-        enemiesWithAoO.push(enemy);
-      }
-    }
-
-    return enemiesWithAoO;
-  }
-
-  /**
-   * Process attacks of opportunity sequentially
-   */
-  private processAttacksOfOpportunity(
-    movingUnit: Unit,
-    enemies: Unit[],
-    index: number,
-    movingSprite: Phaser.GameObjects.Sprite,
-    movingHealthText: Phaser.GameObjects.Text | undefined,
-    onComplete: (alive: boolean) => void
-  ): void {
-    if (index >= enemies.length) {
-      // All AoOs processed
-      onComplete(true);
-      return;
-    }
-
-    const attacker = enemies[index];
-    const attackerSprite = this.unitSprites.get(attacker.id);
-    
-    if (!attackerSprite) {
-      // Skip this attacker, move to next
-      this.processAttacksOfOpportunity(movingUnit, enemies, index + 1, movingSprite, movingHealthText, onComplete);
-      return;
-    }
-
-    console.log(`${attacker.name} gets an attack of opportunity on ${movingUnit.name}!`);
-
-    // Calculate direction from attacker to moving unit
-    const direction = AnimationManager.getDirection(attacker.position, movingUnit.position);
-    attacker.currentDirection = direction;
-
-    // Play attack animation
-    AnimationManager.playAnimation(attackerSprite, attacker.spriteKey, 'attack', direction);
-
-    // Wait for attack animation to complete
-    attackerSprite.once('animationcomplete', () => {
-      // Resolve combat
-      const result = CombatResolver.resolveAttack(attacker, movingUnit);
-      
-      console.log(`Attack of Opportunity: ${result.hit ? 'HIT' : 'MISS'}${result.hit ? ` for ${result.damage} damage` : ''}`);
-
-      if (result.hit) {
-        movingUnit.stats.hp = Math.max(0, movingUnit.stats.hp - result.damage);
-        
-        // Update health text
-        if (movingHealthText) {
-          movingHealthText.setText(`${movingUnit.stats.hp}/${movingUnit.stats.maxHp}`);
-        }
-
-        // Calculate defender's direction (face attacker)
-        const defenderDirection = AnimationManager.getDirection(movingUnit.position, attacker.position);
-        movingUnit.currentDirection = defenderDirection;
-
-        if (result.targetDefeated) {
-          // Moving unit died - play death animation
-          AnimationManager.playAnimation(movingSprite, movingUnit.spriteKey, 'death', defenderDirection);
-
-          movingSprite.once('animationcomplete', () => {
-            // Return attacker to idle
-            AnimationManager.playAnimation(attackerSprite, attacker.spriteKey, 'idle', direction);
-
-            // Ensure corpse frame stays visible
-            movingSprite.setFrame(24);
-
-            // All done - unit is dead
-            onComplete(false);
-          });
-        } else {
-          // Play damage animation
-          AnimationManager.playAnimation(movingSprite, movingUnit.spriteKey, 'damage', defenderDirection);
-          
-          movingSprite.once('animationcomplete', () => {
-            // Return both to idle
-            AnimationManager.playAnimation(movingSprite, movingUnit.spriteKey, 'idle', defenderDirection);
-            AnimationManager.playAnimation(attackerSprite, attacker.spriteKey, 'idle', direction);
-
-            // Process next AoO
-            this.processAttacksOfOpportunity(movingUnit, enemies, index + 1, movingSprite, movingHealthText, onComplete);
-          });
-        }
-      } else {
-        // Miss - defender dodges
-        const originalX = movingSprite.x;
-        const originalY = movingSprite.y;
-        const dodgeOffset = this.calculateDodgeOffset(direction);
-        
-        // Quick dodge
-        this.tweens.add({
-          targets: movingSprite,
-          x: originalX + dodgeOffset.x,
-          y: originalY + dodgeOffset.y,
-          duration: GameConfig.DODGE_DURATION_MS,
-          ease: 'Quad.easeOut',
-          onComplete: () => {
-              this.tweens.add({
-                targets: movingSprite,
-                x: originalX,
-                y: originalY,
-                duration: GameConfig.DODGE_DURATION_MS,
-                ease: 'Quad.easeIn',
-                onComplete: () => {
-                  // Return attacker to idle
-                  AnimationManager.playAnimation(attackerSprite, attacker.spriteKey, 'idle', direction);
-
-                  // Process next AoO
-                  this.processAttacksOfOpportunity(movingUnit, enemies, index + 1, movingSprite, movingHealthText, onComplete);
-                }
-              });
-            
-            // Dodge health text back
-            if (movingHealthText) {
-              this.tweens.add({
-                targets: movingHealthText,
-                x: originalX,
-                y: originalY - GameConfig.TILE_SIZE * 0.4,
-                duration: GameConfig.DODGE_DURATION_MS,
-                ease: 'Quad.easeIn'
-              });
-            }
-          }
-        });
-        
-        // Dodge health text out
-        if (movingHealthText) {
-          this.tweens.add({
-            targets: movingHealthText,
-            x: originalX + dodgeOffset.x,
-            y: originalY + dodgeOffset.y - GameConfig.TILE_SIZE * 0.4,
-            duration: GameConfig.DODGE_DURATION_MS,
-            ease: 'Quad.easeOut'
-          });
-        }
-      }
-    });
   }
 
   private attemptAttack(attacker: Unit, defender: Unit): void {
-    if (!this.canUnitAttack(attacker)) {
+    if (!this.movementController.canUnitAttack(attacker)) {
       return;
     }
 
     if (MovementEngine.isAdjacent(attacker.position, defender.position)) {
-      // Calculate direction from attacker to defender
-      const direction = AnimationManager.getDirection(attacker.position, defender.position);
-      attacker.currentDirection = direction;
-      
-      const attackerSprite = this.unitSprites.get(attacker.id);
-      const defenderSprite = this.unitSprites.get(defender.id);
-      
-      if (!attackerSprite || !defenderSprite) {
-        return;
-      }
+      this.movementController.clearHighlights();
+      this.combatController.attemptAttack(attacker, defender, completedAttacker => {
+        completedAttacker.hasUsedMainAction = true;
 
-      // Clear highlights during combat
-      this.highlightGraphics.clear();
-      
-      // Play attack animation on attacker
-      AnimationManager.playAnimation(attackerSprite, attacker.spriteKey, 'attack', direction);
-      
-      // Wait for attack animation to complete, then resolve combat
-      attackerSprite.once('animationcomplete', () => {
-        // Resolve combat
-        const result = CombatResolver.resolveAttack(attacker, defender);
-        
-        console.log(`${attacker.name} attacks ${defender.name}: ${result.hit ? 'HIT' : 'MISS'}${result.hit ? ` for ${result.damage} damage` : ''}`);
-
-        if (result.hit) {
-          defender.stats.hp = Math.max(0, defender.stats.hp - result.damage);
-          
-          // Update defender's health text
-          const defenderHealthText = this.healthTexts.get(defender.id);
-          if (defenderHealthText) {
-            defenderHealthText.setText(`${defender.stats.hp}/${defender.stats.maxHp}`);
-          }
-
-          // Calculate defender's direction (face attacker)
-          const defenderDirection = AnimationManager.getDirection(defender.position, attacker.position);
-          defender.currentDirection = defenderDirection;
-
-          if (result.targetDefeated) {
-            // Play death animation
-            AnimationManager.playAnimation(defenderSprite, defender.spriteKey, 'death', defenderDirection);
-            
-            // Wait for death animation to complete
-            defenderSprite.once('animationcomplete', () => {
-              // Death animation complete, attacker returns to idle
-              AnimationManager.playAnimation(attackerSprite, attacker.spriteKey, 'idle', direction);
-              
-              // Mark main action as used
-              attacker.hasUsedMainAction = true;
-
-              // Check if unit's turn is complete
-              if (this.isUnitTurnComplete(attacker)) {
-                this.endUnitActivation(attacker);
-              } else {
-                // Re-highlight available actions
-                this.showMovementRange(attacker);
-                this.updateUI();
-              }
-            });
-          } else {
-            // Play damage animation on defender
-            AnimationManager.playAnimation(defenderSprite, defender.spriteKey, 'damage', defenderDirection);
-            
-            // Wait for damage animation to complete
-            defenderSprite.once('animationcomplete', () => {
-              // Return defender to idle
-              AnimationManager.playAnimation(defenderSprite, defender.spriteKey, 'idle', defenderDirection);
-              
-              // Return attacker to idle
-              AnimationManager.playAnimation(attackerSprite, attacker.spriteKey, 'idle', direction);
-              
-              // Mark main action as used
-              attacker.hasUsedMainAction = true;
-
-              // Check if unit's turn is complete
-              if (this.isUnitTurnComplete(attacker)) {
-                this.endUnitActivation(attacker);
-              } else {
-                // Re-highlight available actions
-                this.showMovementRange(attacker);
-                this.updateUI();
-              }
-            });
-          }
+        if (this.isUnitTurnComplete(completedAttacker)) {
+          this.endUnitActivation(completedAttacker);
         } else {
-          // Miss - defender dodges!
-          const defenderHealthText = this.healthTexts.get(defender.id);
-          
-          // Store original positions
-          const originalX = defenderSprite.x;
-          const originalY = defenderSprite.y;
-          
-          // Calculate dodge offset (perpendicular to attack direction)
-          const dodgeOffset = this.calculateDodgeOffset(direction);
-          
-          // Tween defender to the side (dodge out)
-          this.tweens.add({
-            targets: defenderSprite,
-            x: originalX + dodgeOffset.x,
-            y: originalY + dodgeOffset.y,
-            duration: GameConfig.DODGE_DURATION_MS,
-            ease: 'Quad.easeOut',
-            onComplete: () => {
-              // Tween back to original position (dodge back)
-              this.tweens.add({
-                targets: defenderSprite,
-                x: originalX,
-                y: originalY,
-                duration: GameConfig.DODGE_DURATION_MS,
-                ease: 'Quad.easeIn',
-                onComplete: () => {
-                  // Dodge complete, return attacker to idle
-                  AnimationManager.playAnimation(attackerSprite, attacker.spriteKey, 'idle', direction);
-                  
-                  // Mark main action as used
-                  attacker.hasUsedMainAction = true;
-
-                  // Check if unit's turn is complete
-                  if (this.isUnitTurnComplete(attacker)) {
-                    this.endUnitActivation(attacker);
-                  } else {
-                    // Re-highlight available actions
-                    this.showMovementRange(attacker);
-                    this.updateUI();
-                  }
-                }
-              });
-              
-              // Tween health text back too
-              if (defenderHealthText) {
-                this.tweens.add({
-                  targets: defenderHealthText,
-                  x: originalX,
-                  y: originalY - GameConfig.TILE_SIZE * 0.4,
-                  duration: GameConfig.DODGE_DURATION_MS,
-                  ease: 'Quad.easeIn'
-                });
-              }
-            }
-          });
-          
-          // Tween health text with sprite (dodge out)
-          if (defenderHealthText) {
-            this.tweens.add({
-              targets: defenderHealthText,
-              x: originalX + dodgeOffset.x,
-              y: originalY + dodgeOffset.y - GameConfig.TILE_SIZE * 0.4,
-              duration: GameConfig.DODGE_DURATION_MS,
-              ease: 'Quad.easeOut'
-            });
-          }
+          this.movementController.showMovementRange(completedAttacker, this.gameState.units);
+          this.updateUI();
         }
       });
     }
@@ -851,42 +246,14 @@ export class BattleScene extends Phaser.Scene {
     return unit.hasUsedMovement && unit.hasUsedMainAction;
   }
 
-  private setUnitDimmed(unit: Unit, dimmed: boolean): void {
-    const sprite = this.unitSprites.get(unit.id);
-    const healthText = this.healthTexts.get(unit.id);
-    if (!sprite) {
-      return;
-    }
-
-    if (unit.stats.hp <= 0) {
-      sprite.setAlpha(1);
-      if (healthText) {
-        healthText.setAlpha(1);
-      }
-      return;
-    }
-
-    const alpha = dimmed ? 0.5 : 1;
-    sprite.setAlpha(alpha);
-    if (healthText) {
-      healthText.setAlpha(alpha);
-    }
-  }
-
-  private resetActivationVisuals(): void {
-    this.gameState.units.forEach(unit => {
-      this.setUnitDimmed(unit, false);
-    });
-  }
-
   private endUnitActivation(unit: Unit): void {
-    this.setUnitDimmed(unit, true);
+    this.unitController.setUnitDimmed(unit, true);
     this.deselectUnit();
 
     const { roundEnded, gameEnded } = this.turnManager.completeUnitActivation(unit);
 
     if (roundEnded) {
-      this.resetActivationVisuals();
+      this.unitController.resetActivationVisuals(this.gameState.units);
     }
 
     if (gameEnded) {
@@ -894,35 +261,6 @@ export class BattleScene extends Phaser.Scene {
     }
 
     this.updateUI();
-  }
-
-  private updateObjectiveVisuals(): void {
-    this.gameState.objectives.forEach((objective, index) => {
-      const graphics = this.objectiveSprites[index];
-      graphics.clear();
-      
-      const x = objective.position.x * GameConfig.TILE_SIZE + GameConfig.TILE_SIZE / 2;
-      const y = objective.position.y * GameConfig.TILE_SIZE + GameConfig.TILE_SIZE / 2;
-      
-      let color = 0xffff00; // Neutral
-      if (objective.controlledBy === GameConfig.TEAMS.BLUE) {
-        color = 0x0000ff;
-      } else if (objective.controlledBy === GameConfig.TEAMS.RED) {
-        color = 0xff0000;
-      }
-      
-      graphics.lineStyle(2, color, 1);
-      const radius = GameConfig.TILE_SIZE * 0.2;
-      graphics.strokeCircle(x, y, radius);
-      graphics.fillStyle(0xffff00, 0.3);
-      graphics.fillCircle(x, y, radius);
-    });
-  }
-
-  private getUnitAtPosition(pos: Position): Unit | null {
-    return this.gameState.units.find(
-      u => u.position.x === pos.x && u.position.y === pos.y && u.stats.hp > 0
-    ) || null;
   }
 
   private endGame(): void {
@@ -958,82 +296,5 @@ export class BattleScene extends Phaser.Scene {
     }
 
     throw new Error('Map data is missing or invalid.');
-  }
-
-  private getMovementOptions(): { isWalkable?: (pos: Position) => boolean; getMoveCost?: (pos: Position) => number } {
-    return {
-      isWalkable: pos => {
-        const def = this.getLogicalTileDef(pos);
-        if (!def) {
-          return true;
-        }
-        return this.isWalkable(def.terrainType);
-      },
-      getMoveCost: pos => {
-        const def = this.getLogicalTileDef(pos);
-        if (!def) {
-          return 1;
-        }
-        return this.getMoveCost(def.terrainType);
-      }
-    };
-  }
-
-  private getLogicalTileDef(pos: Position): TileDefinition | undefined {
-    const index = pos.y * this.mapDefinition.width + pos.x;
-    const overlayGid = this.mapDefinition.overlayLayer[index];
-    const groundGid = this.mapDefinition.groundLayer[index];
-    const gid = overlayGid && overlayGid !== 0 ? overlayGid : groundGid;
-    return gid ? this.tileDefLookup.get(gid) : undefined;
-  }
-
-  private isWalkable(category: TerrainCategory): boolean {
-    return category === 'land' || category === 'forest';
-  }
-
-  private getMoveCost(category: TerrainCategory): number {
-    switch (category) {
-      case 'forest':
-        return 2;
-      case 'cliff':
-      case 'water':
-        return Number.POSITIVE_INFINITY;
-      case 'land':
-      default:
-        return 1;
-    }
-  }
-
-  /**
-   * Calculate dodge offset perpendicular to attack direction
-   */
-  private calculateDodgeOffset(attackDirection: number): { x: number; y: number } {
-    const offset = GameConfig.DODGE_OFFSET_PIXELS;
-    
-    // For each attack direction, calculate a perpendicular dodge
-    switch (attackDirection) {
-      case 0: // Attacking down - dodge left or right
-      case 4: // Attacking up - dodge left or right
-        return { x: offset, y: 0 }; // Dodge right
-        
-      case 1: // Attacking down-right - dodge perpendicular
-        return { x: offset, y: -offset }; // Dodge up-right
-        
-      case 2: // Attacking right - dodge up or down
-      case 6: // Attacking left - dodge up or down
-        return { x: 0, y: -offset }; // Dodge up
-        
-      case 3: // Attacking up-right - dodge perpendicular
-        return { x: offset, y: offset }; // Dodge down-right
-        
-      case 5: // Attacking up-left - dodge perpendicular
-        return { x: -offset, y: offset }; // Dodge down-left
-        
-      case 7: // Attacking down-left - dodge perpendicular
-        return { x: -offset, y: -offset }; // Dodge up-left
-        
-      default:
-        return { x: offset, y: 0 }; // Default dodge right
-    }
   }
 }
