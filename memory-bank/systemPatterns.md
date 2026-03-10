@@ -36,6 +36,9 @@ Use a **data-driven Phaser architecture** so game balance values live in config,
 - **UIController**: HUD and objective visuals
 - **MovementController**: Movement + AoO sequencing, range highlights, movement rules delegation
 - **CombatController**: Attack sequencing, hit/miss animations
+- **AbilityController**: Ability system initialization, targeting, execution, and animation sequencing
+- **StatusEffectController**: Status trigger timing, status indicators, and status-driven visuals
+- **ActionMenuController**: Ability/action menu UI construction and interaction
 
 ## Key implementation patterns
 

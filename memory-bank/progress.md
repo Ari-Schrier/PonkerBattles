@@ -1,9 +1,9 @@
 # Progress
 
 ## Current status
-Core MVC gameplay loop now includes full animation support, A* path-based movement, dodge feedback on misses, and attacks of opportunity with correct turn resolution. Map pipeline loads BasicMap.tmj with explicit tileDefs mapping and configurable render scale. Recent refactors introduced scene controllers, ActionQueue sequencing, TerrainRules, and Direction enum.
+Core MVC gameplay loop now includes full animation support, A* path-based movement, dodge feedback on misses, and attacks of opportunity with correct turn resolution. Map pipeline loads BasicMap.tmj with explicit tileDefs mapping and configurable render scale.
 
-Ability animations and status effects are now wired: fireball projectile + explosion visuals, poison strike overlays, status indicators, and round-start poison damage with bubble animation. Ability-based kills (fireball) now play death animations instead of freezing.
+BattleScene refactor phases 1–3 are complete: ability execution, status effects, and action menu UI are now handled by dedicated controllers, reducing BattleScene from ~1000 lines to ~320 lines while preserving gameplay behavior.
 
 ## Completed
 
@@ -54,6 +54,12 @@ Ability animations and status effects are now wired: fireball projectile + explo
 - **ActionQueue** for sequential action execution
 - **TerrainRules** module for walkability + movement cost
 - **Direction enum** replacing numeric direction values
+
+### Refactors (2026-03-10)
+- **AbilityController** extracted from BattleScene (ability init, targeting, execution, animation sequencing)
+- **StatusEffectController** extracted from BattleScene (round-start/turn-end status triggers, indicators)
+- **ActionMenuController** extracted from BattleScene (ability/action menu UI)
+- BattleScene reduced from ~1000 lines to ~320 lines, delegating to new controllers
 
 ### Asset Integration
 - Fixed spritesheet loading issue: Changed from `load.image()` to `load.spritesheet()` with 32x32 frame configuration
@@ -142,3 +148,4 @@ Ability animations and status effects are now wired: fireball projectile + explo
 - 2026-03-08: Integrated BasicMap.tmj, generated tileDefs stub, added objective marker parsing, and made render scale configurable via TILE_SIZE
 - 2026-03-09: Extracted scene controllers, added ActionQueue sequencing, centralized TerrainRules, and replaced direction numbers with Direction enum
 - 2026-03-09: Added poison/fireball ability animation wiring, status indicators, round-start poison trigger, and ability death animation handling
+- 2026-03-10: BattleScene refactor phases 1–3 (AbilityController, StatusEffectController, ActionMenuController) and BattleScene simplification

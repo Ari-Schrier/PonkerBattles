@@ -1,7 +1,7 @@
 # Active Context
 
 ## Current focus
-Ability system polish: animation sequencing, status effect visuals, and turn/round trigger consistency.
+BattleScene refactor to reduce complexity: extracted ability, status, and action menu logic into dedicated controllers while preserving gameplay behavior.
 
 ## Confirmed decisions
 - Phaser 3 engine with TypeScript
@@ -54,6 +54,9 @@ Ability system polish: animation sequencing, status effect visuals, and turn/rou
 22. ✅ Poison Strike applies status with overlay indicator and poison bubbles
 23. ✅ Fireball projectile + explosion visuals wired, with damage anim overlap support
 24. ✅ Round-start status triggers (poison) and end-of-turn status ticks now supported
+25. ✅ BattleScene refactor phase 1: AbilityController extracted (ability execution + animation sequencing)
+26. ✅ BattleScene refactor phase 2: StatusEffectController extracted (status triggers + indicators)
+27. ✅ BattleScene refactor phase 3: ActionMenuController extracted (ability menu UI)
 
 ## Current state
 - Game loop is functional: unit selection → movement/attack → alternating activations → round end → winner determination
@@ -77,6 +80,10 @@ Ability system polish: animation sequencing, status effect visuals, and turn/rou
 - Direction is now an enum (`Direction`) instead of magic numbers
 - AoO triggers once at movement start (adjacent enemies at start who are not adjacent at destination)
 - AoO deaths now end the moving unit's activation and leave the corpse frame visible
+- BattleScene responsibilities reduced substantially (~1000 lines → ~320 lines) with new controllers:
+  - `AbilityController` for ability system + animations
+  - `StatusEffectController` for status timing and indicators
+  - `ActionMenuController` for action/ability menu UI
 
 ## Known issues / testing needed
 - Full gameplay loop needs end-to-end testing
@@ -87,10 +94,12 @@ Ability system polish: animation sequencing, status effect visuals, and turn/rou
 - Validate round-start poison timing vs animation feel
 
 ## Immediate next steps
-1. Polish ability animations and integrate with ActionQueue
-2. Add ability-specific UI indicators (icons, cooldowns)
-3. Add status effect visuals (tints/overlays)
-4. Comprehensive gameplay testing with abilities and triggers
+1. (Optional) Continue BattleScene refactor phases 4–5 (InputController + GameFlowController)
+2. Add utility helpers for coordinate conversion + animation offsets
+3. Polish ability animations and integrate with ActionQueue
+4. Add ability-specific UI indicators (icons, cooldowns)
+5. Add status effect visuals (tints/overlays)
+6. Comprehensive gameplay testing with abilities and triggers
 
 ## Implementation guidance
 - Config remains source-of-truth for all tunable values
