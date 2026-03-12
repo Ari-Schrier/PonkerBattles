@@ -1,4 +1,3 @@
-import Phaser from 'phaser';
 import { GameConfig } from '@config/gameConfig';
 import type { Unit, GameState } from '@engine/types';
 import type { ResolvedTarget, TriggerType, AbilityDefinition } from '@engine/abilities';
@@ -8,7 +7,6 @@ import type { AbilityController } from './AbilityController';
 import type { ActionQueue } from './ActionQueue';
 
 export class StatusEffectController {
-  private scene: Phaser.Scene;
   private unitController: UnitController;
   private abilityController: AbilityController;
   private actionQueue: ActionQueue;
@@ -16,15 +14,17 @@ export class StatusEffectController {
   private lastProcessedRound = 0;
 
   constructor(
-    scene: Phaser.Scene,
     unitController: UnitController,
     abilityController: AbilityController,
     actionQueue: ActionQueue
   ) {
-    this.scene = scene;
     this.unitController = unitController;
     this.abilityController = abilityController;
     this.actionQueue = actionQueue;
+
+    this.abilityController.getStatusManager().onStatusChanged((unit) => {
+      this.refreshStatusIndicators([{ position: unit.position, unit }]);
+    });
   }
 
   processRoundEffects(gameState: GameState): void {

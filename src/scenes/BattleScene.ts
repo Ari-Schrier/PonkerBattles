@@ -5,12 +5,11 @@
 
 import Phaser from 'phaser';
 import { GameConfig } from '@config/gameConfig';
-import type { Unit, GameState, Objective, Position, MapData, MapDefinition, TileDefinition } from '@engine/types';
+import type { GameState, MapData, MapDefinition, Objective, TileDefinition, Unit } from '@engine/types';
 import { Direction } from '@engine/types';
 import { TurnManager } from '@engine/TurnManager';
 import { ObjectiveController } from '@engine/ObjectiveController';
 import { MapLoader } from '@data/maps/MapLoader';
-import { MovementEngine } from '@engine/MovementEngine';
 import { TerrainRules } from '@engine/TerrainRules';
 import { UnitController } from './controllers/UnitController';
 import { UIController } from './controllers/UIController';
@@ -20,7 +19,8 @@ import { AbilityController } from './controllers/AbilityController';
 import { StatusEffectController } from './controllers/StatusEffectController';
 import { ActionMenuController } from './controllers/ActionMenuController';
 import { ActionQueue } from './controllers/ActionQueue';
-import type { AbilityDefinition } from '@engine/abilities';
+import { GameFlowController } from './controllers/GameFlowController';
+import { InputController } from './controllers/InputController';
 
 export class BattleScene extends Phaser.Scene {
   private map!: Phaser.Tilemaps.Tilemap;
@@ -28,7 +28,6 @@ export class BattleScene extends Phaser.Scene {
   private tileDefLookup: Map<number, TileDefinition> = new Map();
   private gameState!: GameState;
   private turnManager!: TurnManager;
-  private selectedUnit: Unit | null = null;
   private unitController!: UnitController;
   private uiController!: UIController;
   private movementController!: MovementController;
@@ -36,6 +35,8 @@ export class BattleScene extends Phaser.Scene {
   private abilityController!: AbilityController;
   private statusEffectController!: StatusEffectController;
   private actionMenuController!: ActionMenuController;
+  private gameFlowController!: GameFlowController;
+  private inputController!: InputController;
   private actionQueue!: ActionQueue;
   private terrainRules!: TerrainRules;
 
@@ -84,7 +85,6 @@ export class BattleScene extends Phaser.Scene {
     );
     this.abilityController.initialize();
     this.statusEffectController = new StatusEffectController(
-      this,
       this.unitController,
       this.abilityController,
       this.actionQueue
@@ -98,6 +98,23 @@ export class BattleScene extends Phaser.Scene {
     });
     this.turnManager.startGame();
 
+    this.gameFlowController = new GameFlowController(
+      this,
+      this.unitController,
+      this.statusEffectController,
+      this.turnManager
+    );
+
+    this.inputController = new InputController(
+      this.unitController,
+      this.movementController,
+      this.combatController,
+      this.abilityController,
+      this.actionMenuController,
+      this.gameFlowController,
+      (selectedUnit) => this.updateUI(selectedUnit)
+    );
+
     // Place objectives
     this.uiController.createObjectives(this.gameState);
 
@@ -108,9 +125,11 @@ export class BattleScene extends Phaser.Scene {
     this.uiController.createUI();
 
     // Enable input
-    this.input.on('pointerdown', this.handleClick, this);
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      this.inputController.handlePointerDown(pointer, this.gameState);
+    });
 
-    this.updateUI();
+    this.updateUI(null);
   }
 
   private initializeGameState(): void {
@@ -163,215 +182,21 @@ export class BattleScene extends Phaser.Scene {
     this.statusEffectController.processRoundEffects(this.gameState);
   }
 
-  private updateUI(): void {
-    if (this.selectedUnit) {
-      const movementStatus = this.selectedUnit.hasUsedMovement ? '✓' : 'Available';
-      const mainActionStatus = this.selectedUnit.hasUsedMainAction ? '✓' : 'Available';
+  private updateUI(selectedUnit: Unit | null): void {
+    if (selectedUnit) {
+      const movementStatus = selectedUnit.hasUsedMovement ? '✓' : 'Available';
+      const mainActionStatus = selectedUnit.hasUsedMainAction ? '✓' : 'Available';
 
       this.uiController.updateUI(
         this.gameState,
-        this.selectedUnit.name,
-        `${this.selectedUnit.stats.hp}/${this.selectedUnit.stats.maxHp}`,
+        selectedUnit.name,
+        `${selectedUnit.stats.hp}/${selectedUnit.stats.maxHp}`,
         movementStatus,
         mainActionStatus
       );
     } else {
       this.uiController.updateUI(this.gameState);
     }
-  }
-
-  private handleClick(pointer: Phaser.Input.Pointer): void {
-    const tileX = Math.floor(pointer.worldX / GameConfig.TILE_SIZE);
-    const tileY = Math.floor(pointer.worldY / GameConfig.TILE_SIZE);
-
-    if (this.actionMenuController.isClickInMenu(pointer.worldX, pointer.worldY)) {
-      return;
-    }
-
-    // Check if clicking on a unit
-    const clickedUnit = this.unitController.getUnitAtPosition(this.gameState.units, { x: tileX, y: tileY });
-
-    const selectedAbility = this.abilityController.getSelectedAbility();
-
-    if (this.selectedUnit && selectedAbility) {
-      if (clickedUnit && clickedUnit === this.selectedUnit) {
-        this.abilityController.clearAbilitySelection();
-        this.movementController.showMovementRange(this.selectedUnit, this.gameState.units);
-        this.showActionMenu(this.selectedUnit);
-        this.updateUI();
-        return;
-      }
-
-      this.attemptAbility(this.selectedUnit, selectedAbility, { x: tileX, y: tileY });
-      return;
-    }
-
-    if (this.selectedUnit) {
-      // Unit is already selected
-      if (clickedUnit && clickedUnit === this.selectedUnit) {
-        // If unit has used any actions, end their turn
-        if (this.selectedUnit.hasUsedMovement || this.selectedUnit.hasUsedMainAction) {
-          this.endUnitActivation(this.selectedUnit);
-        } else {
-          // Otherwise just deselect
-          this.deselectUnit();
-        }
-      } else if (clickedUnit && clickedUnit.team !== this.selectedUnit.team) {
-        if (this.movementController.canUnitAttack(this.selectedUnit)) {
-          // Attack enemy
-          this.attemptAttack(this.selectedUnit, clickedUnit);
-        }
-      } else {
-        // Try to move
-        if (this.movementController.canUnitMove(this.selectedUnit)) {
-          this.attemptMove(this.selectedUnit, { x: tileX, y: tileY });
-        }
-      }
-    } else {
-      // No unit selected
-      if (clickedUnit && this.canUnitSelect(clickedUnit)) {
-        this.selectUnit(clickedUnit);
-      }
-    }
-  }
-
-  private canUnitSelect(unit: Unit): boolean {
-    return unit.team === this.gameState.activeTeam && !unit.hasActivated && unit.stats.hp > 0;
-  }
-
-  private selectUnit(unit: Unit): void {
-    this.selectedUnit = unit;
-    this.movementController.showMovementRange(unit, this.gameState.units);
-    this.showActionMenu(unit);
-    this.updateUI();
-  }
-
-  private deselectUnit(): void {
-    this.selectedUnit = null;
-    this.movementController.clearHighlights();
-    this.abilityController.clearAbilitySelection();
-    this.actionMenuController.clear();
-    this.updateUI();
-  }
-
-  private attemptMove(unit: Unit, targetPos: Position): void {
-    this.movementController.attemptMove(
-      unit,
-      targetPos,
-      this.gameState.units,
-      (movedUnit, wasDash) => {
-        if (wasDash) {
-          movedUnit.hasUsedMainAction = true;
-        } else {
-          movedUnit.hasUsedMovement = true;
-        }
-
-        if (this.isUnitTurnComplete(movedUnit)) {
-          this.endUnitActivation(movedUnit);
-        } else {
-          this.movementController.showMovementRange(movedUnit, this.gameState.units);
-          this.showActionMenu(movedUnit);
-          this.updateUI();
-        }
-      },
-      interruptedUnit => {
-        this.endUnitActivation(interruptedUnit);
-      }
-    );
-  }
-
-  private attemptAttack(attacker: Unit, defender: Unit): void {
-    if (!this.movementController.canUnitAttack(attacker)) {
-      return;
-    }
-
-    if (MovementEngine.isAdjacent(attacker.position, defender.position)) {
-      this.movementController.clearHighlights();
-      this.combatController.attemptAttack(attacker, defender, completedAttacker => {
-        completedAttacker.hasUsedMainAction = true;
-
-        if (this.isUnitTurnComplete(completedAttacker)) {
-          this.endUnitActivation(completedAttacker);
-        } else {
-          this.movementController.showMovementRange(completedAttacker, this.gameState.units);
-          this.showActionMenu(completedAttacker);
-          this.updateUI();
-        }
-      });
-    }
-  }
-
-  private attemptAbility(unit: Unit, ability: AbilityDefinition, targetPos: Position): void {
-    const success = this.abilityController.attemptAbility(
-      unit,
-      ability,
-      targetPos,
-      this.gameState.units,
-      () => {
-        if (this.isUnitTurnComplete(unit)) {
-          this.endUnitActivation(unit);
-        } else {
-          this.movementController.showMovementRange(unit, this.gameState.units);
-          this.showActionMenu(unit);
-          this.updateUI();
-        }
-      }
-    );
-
-    if (!success) {
-      return;
-    }
-  }
-
-  private isUnitTurnComplete(unit: Unit): boolean {
-    return unit.hasUsedMovement && unit.hasUsedMainAction;
-  }
-
-  private endUnitActivation(unit: Unit): void {
-    this.statusEffectController.processTurnEnd(unit, this.gameState.units);
-    this.unitController.setUnitDimmed(unit, true);
-    this.deselectUnit();
-
-    const { roundEnded, gameEnded } = this.turnManager.completeUnitActivation(unit);
-
-    if (roundEnded) {
-      this.unitController.resetActivationVisuals(this.gameState.units);
-    }
-
-    if (gameEnded) {
-      this.endGame();
-    }
-
-    this.updateUI();
-  }
-
-  private endGame(): void {
-    this.gameState.winner = ObjectiveController.determineWinner(this.gameState.objectives);
-    this.scene.start('ResultsScene', { winner: this.gameState.winner });
-  }
-
-  private showActionMenu(unit: Unit): void {
-    const abilityDefinitions = this.abilityController.getAbilityDefinitions();
-
-    const abilities = (unit.abilities || [])
-      .map(active => abilityDefinitions.get(active.definitionId))
-      .filter((ability): ability is AbilityDefinition => Boolean(ability))
-      .filter(ability => ability.trigger.type === 'activated');
-
-    this.actionMenuController.show(
-      unit,
-      abilities,
-      (ability) => this.abilityController.isAbilityDisabled(unit, ability),
-      (ability) => this.selectAbility(unit, ability)
-    );
-  }
-
-  private selectAbility(unit: Unit, ability: AbilityDefinition): void {
-    this.abilityController.selectAbility(unit, ability);
-    this.actionMenuController.clear();
-    this.movementController.clearHighlights();
-    this.abilityController.updateTargetHighlights(unit, ability, this.gameState.units);
-    this.updateUI();
   }
 
   private loadMapDefinition(): MapDefinition {

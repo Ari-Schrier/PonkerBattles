@@ -2,12 +2,11 @@ import Phaser from 'phaser';
 import { GameConfig } from '@config/gameConfig';
 import type { Unit, Position, MapDefinition } from '@engine/types';
 import { Direction } from '@engine/types';
-import type { 
-  AbilityDefinition, 
-  AnimationStep, 
-  ResolvedTarget, 
-  StatusDefinition,
-  TriggerType 
+import type {
+  AbilityDefinition,
+  AnimationStep,
+  ResolvedTarget,
+  StatusDefinition
 } from '@engine/abilities';
 import { 
   AbilityResolver, 

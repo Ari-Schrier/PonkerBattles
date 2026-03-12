@@ -39,6 +39,8 @@ Use a **data-driven Phaser architecture** so game balance values live in config,
 - **AbilityController**: Ability system initialization, targeting, execution, and animation sequencing
 - **StatusEffectController**: Status trigger timing, status indicators, and status-driven visuals
 - **ActionMenuController**: Ability/action menu UI construction and interaction
+- **InputController**: Input routing, selection management, and action dispatch
+- **GameFlowController**: Turn completion, round transitions, and game end handling
 
 ## Key implementation patterns
 

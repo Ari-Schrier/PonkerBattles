@@ -15,6 +15,15 @@ import type {
 export class StatusManager {
   private statusDefinitions: Map<string, StatusDefinition> = new Map();
   private activeStatuses: Map<string, ActiveStatus[]> = new Map(); // unitId -> statuses
+  private statusChangeListeners: Array<(unit: Unit) => void> = [];
+
+  onStatusChanged(listener: (unit: Unit) => void): void {
+    this.statusChangeListeners.push(listener);
+  }
+
+  private notifyStatusChanged(unit: Unit): void {
+    this.statusChangeListeners.forEach(listener => listener(unit));
+  }
 
   /**
    * Register a status definition
@@ -85,6 +94,8 @@ export class StatusManager {
       });
     }
 
+    this.notifyStatusChanged(unit);
+
     return true;
   }
 
@@ -99,6 +110,7 @@ export class StatusManager {
     if (index === -1) return false;
 
     unitStatuses.splice(index, 1);
+    this.notifyStatusChanged(unit);
     return true;
   }
 
@@ -107,6 +119,7 @@ export class StatusManager {
    */
   clearStatuses(unit: Unit): void {
     this.activeStatuses.delete(unit.id);
+    this.notifyStatusChanged(unit);
   }
 
   /**
@@ -139,6 +152,8 @@ export class StatusManager {
     if (!unitStatuses) return;
 
     // Decrement durations and remove expired statuses
+    let statusChanged = false;
+
     for (let i = unitStatuses.length - 1; i >= 0; i--) {
       const status = unitStatuses[i];
       const definition = this.statusDefinitions.get(status.definitionId);
@@ -152,12 +167,18 @@ export class StatusManager {
       
       if (status.remainingDuration <= 0) {
         unitStatuses.splice(i, 1);
+        statusChanged = true;
       }
     }
 
     // Clean up empty arrays
     if (unitStatuses.length === 0) {
       this.activeStatuses.delete(unit.id);
+      statusChanged = true;
+    }
+
+    if (statusChanged) {
+      this.notifyStatusChanged(unit);
     }
   }
 

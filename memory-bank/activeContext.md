@@ -1,7 +1,7 @@
 # Active Context
 
 ## Current focus
-BattleScene refactor to reduce complexity: extracted ability, status, and action menu logic into dedicated controllers while preserving gameplay behavior.
+BattleScene refactor to reduce complexity: input handling and turn flow now delegated to InputController and GameFlowController, completing phases 4–5.
 
 ## Confirmed decisions
 - Phaser 3 engine with TypeScript
@@ -57,6 +57,8 @@ BattleScene refactor to reduce complexity: extracted ability, status, and action
 25. ✅ BattleScene refactor phase 1: AbilityController extracted (ability execution + animation sequencing)
 26. ✅ BattleScene refactor phase 2: StatusEffectController extracted (status triggers + indicators)
 27. ✅ BattleScene refactor phase 3: ActionMenuController extracted (ability menu UI)
+28. ✅ BattleScene refactor phase 4: InputController extracted (selection, input routing, action dispatch)
+29. ✅ BattleScene refactor phase 5: GameFlowController extracted (turn flow + game end)
 
 ## Current state
 - Game loop is functional: unit selection → movement/attack → alternating activations → round end → winner determination
@@ -80,10 +82,12 @@ BattleScene refactor to reduce complexity: extracted ability, status, and action
 - Direction is now an enum (`Direction`) instead of magic numbers
 - AoO triggers once at movement start (adjacent enemies at start who are not adjacent at destination)
 - AoO deaths now end the moving unit's activation and leave the corpse frame visible
-- BattleScene responsibilities reduced substantially (~1000 lines → ~320 lines) with new controllers:
+- BattleScene responsibilities reduced substantially (~1000 lines → ~250 lines) with new controllers:
   - `AbilityController` for ability system + animations
   - `StatusEffectController` for status timing and indicators
   - `ActionMenuController` for action/ability menu UI
+  - `InputController` for click handling and unit selection flow
+  - `GameFlowController` for turn completion and game end
 
 ## Known issues / testing needed
 - Full gameplay loop needs end-to-end testing
@@ -94,12 +98,11 @@ BattleScene refactor to reduce complexity: extracted ability, status, and action
 - Validate round-start poison timing vs animation feel
 
 ## Immediate next steps
-1. (Optional) Continue BattleScene refactor phases 4–5 (InputController + GameFlowController)
-2. Add utility helpers for coordinate conversion + animation offsets
-3. Polish ability animations and integrate with ActionQueue
-4. Add ability-specific UI indicators (icons, cooldowns)
-5. Add status effect visuals (tints/overlays)
-6. Comprehensive gameplay testing with abilities and triggers
+1. Add utility helpers for coordinate conversion + animation offsets
+2. Polish ability animations and integrate with ActionQueue
+3. Add ability-specific UI indicators (icons, cooldowns)
+4. Add status effect visuals (tints/overlays)
+5. Comprehensive gameplay testing with abilities and triggers
 
 ## Implementation guidance
 - Config remains source-of-truth for all tunable values
