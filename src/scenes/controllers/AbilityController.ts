@@ -15,7 +15,8 @@ import {
   TriggerManager, 
   TargetingSystem 
 } from '@engine/abilities';
-import { AnimationManager } from '@engine/AnimationManager';
+import { DirectionUtils } from '@engine/utils/DirectionUtils';
+import { AnimationHelper } from '../utils/AnimationHelper';
 import type { UnitController } from './UnitController';
 import type { ActionQueue } from './ActionQueue';
 
@@ -273,12 +274,12 @@ export class AbilityController {
       return this.wait(step.duration ?? 0);
     }
 
-    const direction = AnimationManager.getDirection(caster.position, targetPos);
+    const direction = DirectionUtils.getDirection(caster.position, targetPos);
     caster.currentDirection = direction;
-    AnimationManager.playAnimation(sprite, caster.spriteKey, animationType, direction);
+    AnimationHelper.playAnimation(sprite, caster.spriteKey, animationType, direction);
     sprite.once('animationcomplete', () => {
       if (caster.stats.hp > 0) {
-        AnimationManager.playAnimation(sprite, caster.spriteKey, 'idle', direction);
+        AnimationHelper.playAnimation(sprite, caster.spriteKey, 'idle', direction);
       }
     });
 
@@ -306,9 +307,9 @@ export class AbilityController {
         if (!sprite) {
           return null;
         }
-        const direction = AnimationManager.getDirection(unit.position, caster.position);
+        const direction = DirectionUtils.getDirection(unit.position, caster.position);
         unit.currentDirection = direction;
-        AnimationManager.playAnimation(sprite, unit.spriteKey, animationType, direction);
+        AnimationHelper.playAnimation(sprite, unit.spriteKey, animationType, direction);
         return { unit, sprite, direction };
       })
       .filter(
@@ -324,7 +325,7 @@ export class AbilityController {
       spriteTargets.forEach(({ unit, sprite, direction }) => {
         sprite.once('animationcomplete', () => {
           if (resetToIdle && unit.stats.hp > 0) {
-            AnimationManager.playAnimation(sprite, unit.spriteKey, 'idle', direction);
+            AnimationHelper.playAnimation(sprite, unit.spriteKey, 'idle', direction);
           } else if (unit.stats.hp <= 0) {
             this.playDeathAnimation(unit, direction);
           }
@@ -340,7 +341,7 @@ export class AbilityController {
       spriteTargets.forEach(({ unit, sprite, direction }) => {
         sprite.once('animationcomplete', () => {
           if (resetToIdle && unit.stats.hp > 0) {
-            AnimationManager.playAnimation(sprite, unit.spriteKey, 'idle', direction);
+            AnimationHelper.playAnimation(sprite, unit.spriteKey, 'idle', direction);
           } else if (unit.stats.hp <= 0) {
             this.playDeathAnimation(unit, direction);
           }
@@ -470,7 +471,7 @@ export class AbilityController {
     }
 
     const resolvedDirection = direction ?? unit.currentDirection;
-    AnimationManager.playAnimation(sprite, unit.spriteKey, 'death', resolvedDirection);
+    AnimationHelper.playAnimation(sprite, unit.spriteKey, 'death', resolvedDirection);
     sprite.once('animationcomplete', () => {
       sprite.setFrame(resolvedDirection * 29 + 24);
     });
@@ -491,7 +492,7 @@ export class AbilityController {
       this.unitController.updateHealthText(unit);
 
       if (unit.stats.hp <= 0 && !hasTargetAnim) {
-        const direction = AnimationManager.getDirection(unit.position, caster.position);
+        const direction = DirectionUtils.getDirection(unit.position, caster.position);
         unit.currentDirection = direction;
         this.playDeathAnimation(unit, direction);
       }

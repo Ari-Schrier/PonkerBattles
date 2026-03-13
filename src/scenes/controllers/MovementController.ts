@@ -4,7 +4,8 @@ import type { MapDefinition, Position, Unit } from '@engine/types';
 import { Direction } from '@engine/types';
 import { MovementEngine } from '@engine/MovementEngine';
 import { CombatResolver } from '@engine/CombatResolver';
-import { AnimationManager } from '@engine/AnimationManager';
+import { DirectionUtils } from '@engine/utils/DirectionUtils';
+import { AnimationHelper } from '../utils/AnimationHelper';
 import type { TerrainRules } from '@engine/TerrainRules';
 import type { UnitController } from './UnitController';
 import type { ActionQueue, ActionStep } from './ActionQueue';
@@ -154,7 +155,7 @@ export class MovementController {
       }
 
       unit.position = targetPos;
-      AnimationManager.playAnimation(sprite, unit.spriteKey, 'idle', unit.currentDirection);
+      AnimationHelper.playAnimation(sprite, unit.spriteKey, 'idle', unit.currentDirection);
       onComplete(unit, isDash);
       return Promise.resolve();
     });
@@ -213,10 +214,10 @@ export class MovementController {
     statusIndicator: Phaser.GameObjects.Sprite | undefined,
     onComplete: () => void
   ): void {
-    const direction = AnimationManager.getDirection(from, to);
+    const direction = DirectionUtils.getDirection(from, to);
     unit.currentDirection = direction;
 
-    AnimationManager.playAnimation(sprite, unit.spriteKey, 'walk', direction);
+    AnimationHelper.playAnimation(sprite, unit.spriteKey, 'walk', direction);
 
     const targetX = to.x * GameConfig.TILE_SIZE + GameConfig.TILE_SIZE / 2;
     const targetY = to.y * GameConfig.TILE_SIZE + GameConfig.TILE_SIZE / 2;
@@ -273,10 +274,10 @@ export class MovementController {
 
       console.log(`${attacker.name} gets an attack of opportunity on ${movingUnit.name}!`);
 
-      const direction = AnimationManager.getDirection(attacker.position, movingUnit.position);
+      const direction = DirectionUtils.getDirection(attacker.position, movingUnit.position);
       attacker.currentDirection = direction;
 
-      AnimationManager.playAnimation(attackerSprite, attacker.spriteKey, 'attack', direction);
+      AnimationHelper.playAnimation(attackerSprite, attacker.spriteKey, 'attack', direction);
 
       attackerSprite.once('animationcomplete', () => {
         const result = CombatResolver.resolveAttack(attacker, movingUnit);
@@ -287,24 +288,24 @@ export class MovementController {
           movingUnit.stats.hp = Math.max(0, movingUnit.stats.hp - result.damage);
           this.unitController.updateHealthText(movingUnit);
 
-          const defenderDirection = AnimationManager.getDirection(movingUnit.position, attacker.position);
+          const defenderDirection = DirectionUtils.getDirection(movingUnit.position, attacker.position);
           movingUnit.currentDirection = defenderDirection;
 
           if (result.targetDefeated) {
-            AnimationManager.playAnimation(movingSprite, movingUnit.spriteKey, 'death', defenderDirection);
+            AnimationHelper.playAnimation(movingSprite, movingUnit.spriteKey, 'death', defenderDirection);
 
             movingSprite.once('animationcomplete', () => {
-              AnimationManager.playAnimation(attackerSprite, attacker.spriteKey, 'idle', direction);
+              AnimationHelper.playAnimation(attackerSprite, attacker.spriteKey, 'idle', direction);
               movingSprite.setFrame(24);
               onKilled();
               resolve();
             });
           } else {
-            AnimationManager.playAnimation(movingSprite, movingUnit.spriteKey, 'damage', defenderDirection);
+            AnimationHelper.playAnimation(movingSprite, movingUnit.spriteKey, 'damage', defenderDirection);
 
             movingSprite.once('animationcomplete', () => {
-              AnimationManager.playAnimation(movingSprite, movingUnit.spriteKey, 'idle', defenderDirection);
-              AnimationManager.playAnimation(attackerSprite, attacker.spriteKey, 'idle', direction);
+              AnimationHelper.playAnimation(movingSprite, movingUnit.spriteKey, 'idle', defenderDirection);
+              AnimationHelper.playAnimation(attackerSprite, attacker.spriteKey, 'idle', direction);
               resolve();
             });
           }
@@ -327,7 +328,7 @@ export class MovementController {
                 duration: GameConfig.DODGE_DURATION_MS,
                 ease: 'Quad.easeIn',
                 onComplete: () => {
-                  AnimationManager.playAnimation(attackerSprite, attacker.spriteKey, 'idle', direction);
+                  AnimationHelper.playAnimation(attackerSprite, attacker.spriteKey, 'idle', direction);
                   resolve();
                 }
               });

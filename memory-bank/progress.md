@@ -1,12 +1,13 @@
 # Progress
 
 ## Current status
-Core MVC loop is functional with controller refactor complete, abilities/statuses integrated, and BasicMap pipeline working (A* pathing, highlights, objectives, and scaled rendering).
+Core MVC loop is functional with controller refactor complete, abilities/statuses integrated, and BasicMap pipeline working. Phase 1 migration cleanup underway with engine now Phaser-free and deterministic RNG added.
 
 ## Recent changes
 - BattleScene refactor phases 4–5 completed (InputController + GameFlowController).
 - Ability/status animation sequencing via ActionQueue; status indicators and round-start poison triggers.
 - BasicMap.tmj pipeline with explicit tileDefs mapping and render scaling.
+- Phase 1 migration cleanup: DirectionUtils + AnimationHelper split, RNG added, CombatResolver updated, EnginePurity tests added.
 - AoO handling updated with corpse frames and activation-ending behavior.
 
 ## Remaining (MVC)

@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { GameConfig } from '@config/gameConfig';
 import type { Position, Unit } from '@engine/types';
-import { AnimationManager } from '@engine/AnimationManager';
+import { AnimationHelper } from '../utils/AnimationHelper';
 
 export class UnitController {
   private scene: Phaser.Scene;
@@ -24,7 +24,7 @@ export class UnitController {
       sprite.disableInteractive();
 
       // Show idle animation for initial direction
-      AnimationManager.playAnimation(sprite, unit.spriteKey, 'idle', unit.currentDirection);
+      AnimationHelper.playAnimation(sprite, unit.spriteKey, 'idle', unit.currentDirection);
 
       this.unitSprites.set(unit.id, sprite);
 

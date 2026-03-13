@@ -4,7 +4,7 @@
  */
 
 import Phaser from 'phaser';
-import { AnimationManager } from '@engine/AnimationManager';
+import { AnimationHelper } from './utils/AnimationHelper';
 import { GameConfig } from '@config/gameConfig';
 
 export class PreloadScene extends Phaser.Scene {
@@ -146,7 +146,7 @@ export class PreloadScene extends Phaser.Scene {
     };
 
     spriteKeys.forEach(key => {
-      AnimationManager.createAnimationsForSprite(this, key, frameRates);
+      AnimationHelper.createAnimationsForSprite(this, key, frameRates);
     });
 
     // Transition to battle scene

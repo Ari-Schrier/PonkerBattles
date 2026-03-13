@@ -5,25 +5,23 @@
 
 import { GameConfig } from '@config/gameConfig';
 import type { Unit, AttackResult } from './types';
+import { RNG, globalRNG } from './RNG';
 
 export class CombatResolver {
   /**
    * Roll 2d10 for hit check
    */
-  private static rollHit(): number {
-    let total = 0;
-    for (let i = 0; i < GameConfig.HIT_ROLL_DICE_COUNT; i++) {
-      total += Math.floor(Math.random() * GameConfig.HIT_ROLL_DICE_SIDES) + 1;
-    }
-    return total;
+  private static rollHit(rng: RNG = globalRNG): number {
+    return rng.rollDice(GameConfig.HIT_ROLL_DICE_COUNT, GameConfig.HIT_ROLL_DICE_SIDES);
   }
 
   /**
    * Resolve an attack between attacker and defender
    * Formula: (2d10 - 8) + attackBonus >= evasion
+   * @param rng - Optional RNG instance for deterministic behavior. Uses globalRNG if not provided.
    */
-  static resolveAttack(attacker: Unit, defender: Unit): AttackResult {
-    const roll = this.rollHit();
+  static resolveAttack(attacker: Unit, defender: Unit, rng: RNG = globalRNG): AttackResult {
+    const roll = this.rollHit(rng);
     const attackValue = roll - GameConfig.HIT_BASE_SUBTRACT + attacker.stats.attackBonus;
     const hit = attackValue >= defender.stats.evasion;
 

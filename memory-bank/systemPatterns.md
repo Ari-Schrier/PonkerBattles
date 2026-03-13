@@ -43,6 +43,15 @@ TurnManager enforces alternation, round progression, and end conditions.
 ### Movement + combat
 Engine validates legality; controllers manage pathfinding/animations and call engine resolvers.
 
+### Deterministic RNG
+- `src/engine/RNG.ts` provides a seeded RNG for server-authoritative resolution.
+- `CombatResolver.resolveAttack` accepts an optional RNG (defaults to `globalRNG`).
+- Server uses seeded RNG; client may use `globalRNG` for previews.
+
+### Data loader abstraction
+- `IAbilityDataSource` interface decouples ability/status loading from `fetch()`.
+- Browser loader remains in `AbilityDataLoader`, server will provide its own adapter later.
+
 ## Ability System Architecture (keep detailed)
 
 ### Overview

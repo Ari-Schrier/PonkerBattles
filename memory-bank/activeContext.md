@@ -1,12 +1,13 @@
 # Active Context
 
 ## Current focus
-BattleScene refactor complete; stabilize the gameplay loop, test edge cases, and polish ability/status visuals.
+Phase 1 migration cleanup in progress: keep engine deterministic and Phaser-free to support server execution.
 
 ## Recent changes
-- Completed BattleScene refactor phases 4–5: InputController + GameFlowController extracted.
-- Ability system integrated with ActionQueue, including status indicators/animations.
-- BasicMap.tmj load pipeline with explicit tileDefs mapping.
+- Extracted direction math into `DirectionUtils`; moved Phaser animations to `AnimationHelper`.
+- Removed Phaser dependency from engine (deleted `AnimationManager`).
+- Added deterministic RNG (`RNG.ts`) and updated `CombatResolver` to accept an RNG.
+- Added `EnginePurity.test.ts` and `IAbilityDataSource` interface.
 
 ## Confirmed decisions
 - Phaser 3 + TypeScript, Vite + npm.

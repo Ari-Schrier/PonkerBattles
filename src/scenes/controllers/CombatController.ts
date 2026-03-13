@@ -3,7 +3,8 @@ import { GameConfig } from '@config/gameConfig';
 import type { Unit } from '@engine/types';
 import { Direction } from '@engine/types';
 import { CombatResolver } from '@engine/CombatResolver';
-import { AnimationManager } from '@engine/AnimationManager';
+import { DirectionUtils } from '@engine/utils/DirectionUtils';
+import { AnimationHelper } from '../utils/AnimationHelper';
 import type { UnitController } from './UnitController';
 import type { ActionQueue, ActionStep } from './ActionQueue';
 
@@ -36,9 +37,9 @@ export class CombatController {
     let attackResult: ReturnType<typeof CombatResolver.resolveAttack> | null = null;
 
     steps.push(() => {
-      const direction = AnimationManager.getDirection(attacker.position, defender.position);
+      const direction = DirectionUtils.getDirection(attacker.position, defender.position);
       attacker.currentDirection = direction;
-      AnimationManager.playAnimation(attackerSprite, attacker.spriteKey, 'attack', direction);
+      AnimationHelper.playAnimation(attackerSprite, attacker.spriteKey, 'attack', direction);
 
       return new Promise(resolve => {
         attackerSprite.once('animationcomplete', resolve);
@@ -75,32 +76,32 @@ export class CombatController {
       return Promise.resolve();
     }
 
-    const direction = AnimationManager.getDirection(attacker.position, defender.position);
+    const direction = DirectionUtils.getDirection(attacker.position, defender.position);
 
     if (attackResult.hit) {
       defender.stats.hp = Math.max(0, defender.stats.hp - attackResult.damage);
       this.unitController.updateHealthText(defender);
 
-      const defenderDirection = AnimationManager.getDirection(defender.position, attacker.position);
+      const defenderDirection = DirectionUtils.getDirection(defender.position, attacker.position);
       defender.currentDirection = defenderDirection;
 
       if (attackResult.targetDefeated) {
-        AnimationManager.playAnimation(defenderSprite, defender.spriteKey, 'death', defenderDirection);
+        AnimationHelper.playAnimation(defenderSprite, defender.spriteKey, 'death', defenderDirection);
 
         return new Promise(resolve => {
           defenderSprite.once('animationcomplete', () => {
-            AnimationManager.playAnimation(attackerSprite, attacker.spriteKey, 'idle', direction);
+            AnimationHelper.playAnimation(attackerSprite, attacker.spriteKey, 'idle', direction);
             resolve();
           });
         });
       }
 
-      AnimationManager.playAnimation(defenderSprite, defender.spriteKey, 'damage', defenderDirection);
+      AnimationHelper.playAnimation(defenderSprite, defender.spriteKey, 'damage', defenderDirection);
 
       return new Promise(resolve => {
         defenderSprite.once('animationcomplete', () => {
-          AnimationManager.playAnimation(defenderSprite, defender.spriteKey, 'idle', defenderDirection);
-          AnimationManager.playAnimation(attackerSprite, attacker.spriteKey, 'idle', direction);
+          AnimationHelper.playAnimation(defenderSprite, defender.spriteKey, 'idle', defenderDirection);
+          AnimationHelper.playAnimation(attackerSprite, attacker.spriteKey, 'idle', direction);
           resolve();
         });
       });
@@ -136,7 +137,7 @@ export class CombatController {
             duration: GameConfig.DODGE_DURATION_MS,
             ease: 'Quad.easeIn',
             onComplete: () => {
-              AnimationManager.playAnimation(attackerSprite, attackerSprite.texture.key, 'idle', attackDirection);
+              AnimationHelper.playAnimation(attackerSprite, attackerSprite.texture.key, 'idle', attackDirection);
               resolve();
             }
           });
