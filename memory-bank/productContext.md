@@ -1,25 +1,20 @@
 # Product Context
 
-## Why this project exists
-This game is intended to deliver fast, expressive tactical play without RPG campaign overhead. The fun comes from battlefield decision-making, unit role contrast, and objective pressure.
+## Purpose
+Deliver fast, expressive tactical play without campaign overhead—short skirmishes focused on positioning, timing, and objective pressure.
 
-## Problem it solves
-- Tactical games can be too long, too simulation-heavy, or too build-heavy for quick iteration.
-- This project aims for shorter, cleaner skirmishes where strategy is clear and outcomes are mostly driven by positioning, timing, and activation order.
-
-## Intended player experience (MVC)
-- Understand state quickly (perfect information, no fog of war).
+## MVC player experience
+- Perfect information; state should be easy to read.
 - Alternate meaningful unit activations.
-- Decide between movement, ability use, and objective control pressure.
-- Finish in a predictable short session (4 rounds).
+- Clear movement/targeting highlights.
+- Finish in a short, predictable session (4 rounds).
 
 ## UX principles
-- **Clarity over spectacle** in MVC.
-- Controls entirely by mouse.
-- Highlight legal moves/targets to reduce ambiguity.
-- Make objective-control state visible each round.
+- Clarity over spectacle in MVC.
+- Mouse-only controls.
+- Objective-control state visible each round.
 
-## Success criteria for milestone 1
-- Full playable match loop from setup to winner determination.
+## Milestone 1 success criteria
+- Full playable match loop (setup → winner).
 - Rules behave consistently with canonical formulas.
-- Balance knobs are externalized so playtest updates are easy.
+- Balance knobs externalized for quick iteration.
