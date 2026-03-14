@@ -1,14 +1,14 @@
 # Progress
 
 ## Current status
-Core MVC loop is functional with controller refactor complete, abilities/statuses integrated, and BasicMap pipeline working. Phase 1 migration cleanup underway with engine now Phaser-free and deterministic RNG added.
+Phase 2 migration completed: monorepo split with shared `game-core` and `game-client` packages. Engine builds and tests pass in Node; client builds in workspace.
 
 ## Recent changes
-- BattleScene refactor phases 4–5 completed (InputController + GameFlowController).
-- Ability/status animation sequencing via ActionQueue; status indicators and round-start poison triggers.
-- BasicMap.tmj pipeline with explicit tileDefs mapping and render scaling.
-- Phase 1 migration cleanup: DirectionUtils + AnimationHelper split, RNG added, CombatResolver updated, EnginePurity tests added.
-- AoO handling updated with corpse frames and activation-ending behavior.
+- Created npm workspaces and moved engine/config into `packages/game-core`.
+- Added `ActionResolver.resolveAction()` API for server-authoritative action processing.
+- Migrated client to `packages/game-client` and updated all imports to `@battlegame/game-core`.
+- Fixed TS/Vite configs, enabled composite build, and updated test imports.
+- Workspace builds/tests run cleanly (`npm run build:core`, `npm run build:client`, `npm run test`).
 
 ## Remaining (MVC)
 - End-to-end 4-round match testing and AoO edge cases.
@@ -18,6 +18,6 @@ Core MVC loop is functional with controller refactor complete, abilities/statuse
 - Finalize terrain categories in tileDefs and objective marker validation.
 
 ## Recent log (latest)
+- 2026-03-14: Phase 2 migration completed (game-core/game-client split, resolveAction API, workspace builds/tests).
 - 2026-03-10: BattleScene refactor phases 4–5 complete.
 - 2026-03-09: Ability/status visuals and animation sequencing added.
-- 2026-03-08: BasicMap.tmj pipeline and render scaling updates.

@@ -1,7 +1,7 @@
 # System Patterns
 
 ## Architectural approach (MVC)
-Data-driven Phaser architecture: balance values live in config, gameplay logic is pure, and scenes/controllers focus on rendering/input.
+Data-driven Phaser architecture: balance values live in config, gameplay logic is pure, and scenes/controllers focus on rendering/input. Phase 2 introduces a monorepo split with a shared `game-core` package for deterministic rules.
 
 ## Core principles
 1. **Config-first rules**: All tunable values in `gameConfig.ts`.
@@ -13,21 +13,22 @@ Data-driven Phaser architecture: balance values live in config, gameplay logic i
 ## High-level modules
 
 ### Configuration
-- `src/config/gameConfig.ts`
+- `packages/game-core/src/config/gameConfig.ts`
 
 ### Data
-- `src/data/units/*.json`
-- `src/data/maps/*.json`
-- `src/data/abilities.json`, `src/data/statuses.json`
+- `packages/game-client/src/data/units/*.json`
+- `packages/game-client/src/data/maps/*.json`
+- `packages/game-client/src/data/abilities.json`, `packages/game-client/src/data/statuses.json`
 
 ### Engine
-- `CombatResolver`, `MovementEngine`, `ObjectiveController`, `TurnManager`, `TerrainRules`
-- `engine/types.ts`
+- `packages/game-core/src/engine/*` (CombatResolver, MovementEngine, ObjectiveController, TurnManager, TerrainRules)
+- `packages/game-core/src/engine/types.ts`
+- `packages/game-core/src/ActionResolver.ts` for `resolveAction()` API
 
 ### Scenes + Controllers
-- Scenes: `PreloadScene`, `BattleScene`, `ResultsScene`
-- Controllers: `AbilityController`, `StatusEffectController`, `ActionMenuController`, `InputController`, `GameFlowController`
-- Supporting: `MovementController`, `CombatController`, `UnitController`, `UIController`, `ActionQueue`
+- `packages/game-client/src/scenes/*` (PreloadScene, BattleScene, ResultsScene)
+- Controllers: AbilityController, StatusEffectController, ActionMenuController, InputController, GameFlowController
+- Supporting: MovementController, CombatController, UnitController, UIController, ActionQueue
 
 ## Key patterns
 

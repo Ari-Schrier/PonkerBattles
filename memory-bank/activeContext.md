@@ -1,13 +1,14 @@
 # Active Context
 
 ## Current focus
-Phase 1 migration cleanup in progress: keep engine deterministic and Phaser-free to support server execution.
+Phase 2 migration completed: extracted shared `game-core` package with `resolveAction()` and moved client into `game-client` workspace for server/client reuse.
 
 ## Recent changes
-- Extracted direction math into `DirectionUtils`; moved Phaser animations to `AnimationHelper`.
-- Removed Phaser dependency from engine (deleted `AnimationManager`).
-- Added deterministic RNG (`RNG.ts`) and updated `CombatResolver` to accept an RNG.
-- Added `EnginePurity.test.ts` and `IAbilityDataSource` interface.
+- Created npm workspaces with `packages/game-core` and `packages/game-client`.
+- Moved deterministic engine + config into `game-core`, added `ActionResolver.resolveAction()` API.
+- Updated client imports to consume `@battlegame/game-core` and cleaned TS/Vite aliases.
+- Added composite TypeScript build for `game-core` and updated test imports to relative paths.
+- Adjusted `game-client` test script to allow no tests.
 
 ## Confirmed decisions
 - Phaser 3 + TypeScript, Vite + npm.
@@ -17,10 +18,9 @@ Phase 1 migration cleanup in progress: keep engine deterministic and Phaser-free
 - Activated units dim; defeated units show corpse frame.
 
 ## Current state
-- Core loop functional: select unit → move/attack/ability → alternating activations → round end → winner.
-- Ability targeting/execution working with animation sequencing and status ticks.
-- UI shows round/team/objective scores and selected unit info.
-- Map loads from BasicMap.tmj with movement highlights + A* pathing.
+- Core loop functional in client package.
+- Shared engine builds in Node, tests passing, client builds successfully in workspace.
+- `resolveAction()` available for server-authoritative action processing (move/attack/ability/wait).
 
 ## Known issues / testing needed
 - End-to-end match testing and AoO edge cases.
@@ -29,6 +29,6 @@ Phase 1 migration cleanup in progress: keep engine deterministic and Phaser-free
 - Validate round-start poison timing.
 
 ## Immediate next steps
-1. Add coordinate/animation helper utilities.
-2. Polish ability animations + UI indicators.
-3. Add status visuals (tints/overlays) and complete playtesting.
+1. Decide if `resolveAction()` needs map dimensions/terrain adapter parameters for server use.
+2. Begin Phase 3: persistence model (Match/Turn schemas + storage adapters).
+3. Continue MVC playtesting and objective scoring validation.
