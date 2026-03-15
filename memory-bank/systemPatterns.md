@@ -105,3 +105,141 @@ triggerManager.onDamageTaken(unit, damage, attacker, units, mapWidth, mapHeight)
 
 ### Reference
 See `src/engine/abilities/README.md` for full schema and examples.
+
+## Persistence Layer Architecture (Phase 3)
+
+### Overview
+Server-authoritative persistence model for asynchronous multiplayer, supporting partial turn submission, optimistic concurrency, and deterministic replay.
+
+### Components
+- **Schemas** (`src/persistence/schemas.ts`)
+- **Serialization** (`src/persistence/serialization.ts`)
+- **Repositories** (`src/persistence/repositories.ts`)
+- **TurnResolver** (`src/persistence/TurnResolver.ts`)
+
+### Key Features
+1. Canonical Match and TurnEvent schemas for Azure Cosmos DB
+2. Lossless GameState ↔ Match serialization
+3. Optimistic concurrency via version numbers and ETags
+4. Partial turn submission (move now, attack later)
+5. Turn event logging for replay/history
+6. Status effect triggers integrated into turn resolution
+7. Deterministic RNG seed progression
+
+### Persistence Patterns
+
+#### Match State Schema
+```typescript
+Match {
+  id, version, _etag,           // Identity + concurrency
+  status, createdAt, updatedAt,  // Lifecycle
+  mapId, mapWidth, mapHeight,    // Configuration
+  players[], activePlayerId,      // Participants
+  currentRound, currentPhase, activeTeam, turnNumber,  // Game progress
+  units[], objectives[], winner,  // State
+  rngSeed,                        // Determinism
+  lastProcessedTurnId             // Idempotency
+}
+```
+
+#### Turn Resolution Flow
+```
+Client submits commands → resolveTurn() validates player/turn
+→ Converts Match to GameState → Executes each command via resolveAction()
+→ Fires status triggers (turn/round start/end) → Converts back to Match
+→ Creates TurnEvent for history → Returns updated Match + TurnEvent
+```
+
+#### Serialization Strategy
+- **Units**: Abilities stored by ID reference (not full definitions)
+- **Objectives**: Position + control state
+- **RNG**: Seed advances deterministically between actions
+- **Round-trip validation**: Ensures no data loss in conversion
+
+#### Partial Turn Support
+- Commands don't auto-complete turn unless both movement and main action used
+- Client can submit move command, then later submit attack command
+- Each submission updates match version and creates turn event
+- `endTurn` flag forces completion even with unused actions
+
+#### Optimistic Concurrency
+- Match version increments on each update
+- Cosmos DB ETag prevents conflicting writes
+- Client must provide expected version
+- On conflict, server returns current version for retry
+
+#### Repository Interfaces
+```typescript
+IMatchRepository {
+  create(match)
+  getById(matchId)
+  update(match, expectedVersion)  // throws ConcurrencyError on mismatch
+  listByPlayer(playerId, status?, limit?)
+  delete(matchId)
+}
+
+ITurnHistoryRepository {
+  append(turnEvent)
+  getByMatch(matchId)
+  getById(eventId)
+  getByMatchRange(matchId, fromTurn, toTurn)
+}
+```
+
+#### RNG Determinism
+- Each match has a seed
+- Seed advances via `rng.nextInt()` after each action
+- Server and client can replay exact sequence
+- Turn events store `rngSeedBefore` and `rngSeedAfter` for verification
+
+#### Status Trigger Integration
+- Round start: fires for all units at SETUP phase
+- Turn start: fires when unit begins first action
+- Turn end: fires after unit completes activation
+- Round end: fires for all units after round completes
+
+### Usage Pattern
+```typescript
+// Create match
+const match = createMatch(matchId, mapId, width, height, players, initialState, seed);
+
+// Submit turn (partial)
+const result = await resolveTurn(
+  match,
+  playerId,
+  turnId,
+  [{ type: 'move', unitId: 'u1', path: [{ x: 5, y: 6 }] }],
+  { abilities, statuses, mapWidth, mapHeight }
+);
+
+// Submit follow-up action
+const result2 = await resolveTurn(
+  result.match,
+  playerId,
+  turnId2,
+  [{ type: 'attack', unitId: 'u1', targetId: 'u2' }]
+);
+
+// Force end turn
+const result3 = await resolveTurn(
+  match,
+  playerId,
+  turnId3,
+  [],
+  {},
+  true  // endTurn
+);
+```
+
+### Storage Strategy
+- **Active matches**: Cosmos DB (SQL API) for queryability and concurrency
+- **Turn history**: Blob Storage (append blobs) for cost-effective archival
+- **In-memory implementations**: Provided for testing without infrastructure
+
+### Testing
+- Serialization round-trip validation (8/8 tests passing)
+- Partial turn submission scenarios (TurnResolver 12/12 passing)
+- Idempotency enforcement
+- RNG seed progression
+- Status trigger timing
+- Concurrency conflict handling

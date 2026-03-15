@@ -87,3 +87,48 @@ export type {
   ResolveActionInput,
   ResolveActionOutput
 } from './ActionResolver.js';
+
+// Persistence Layer (Phase 3)
+export type {
+  Match,
+  MatchStatus,
+  MatchParticipant,
+  UnitState,
+  ObjectiveState,
+  TurnEvent,
+  SubmitTurnRequest,
+  SubmitTurnResponse,
+  CreateMatchRequest,
+  CreateMatchResponse
+} from './persistence/schemas.js';
+
+export {
+  gameStateToMatch,
+  matchToGameState,
+  unitToUnitState,
+  unitStateToUnit,
+  objectiveToObjectiveState,
+  objectiveStateToObjective,
+  validateRoundTrip
+} from './persistence/serialization.js';
+
+export type {
+  IMatchRepository,
+  ITurnHistoryRepository
+} from './persistence/repositories.js';
+
+export {
+  ConcurrencyError,
+  InMemoryMatchRepository,
+  InMemoryTurnHistoryRepository
+} from './persistence/repositories.js';
+
+export {
+  resolveTurn,
+  createMatch
+} from './persistence/TurnResolver.js';
+
+export type {
+  TurnResolutionConfig,
+  TurnResolutionResult
+} from './persistence/TurnResolver.js';

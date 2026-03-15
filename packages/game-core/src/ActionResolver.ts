@@ -138,13 +138,17 @@ export function resolveAction(input: ResolveActionInput): ResolveActionOutput {
     gameEnded = completion.gameEnded;
   }
   
+  // Advance RNG state for next action by generating a new seed
+  // This ensures deterministic progression while consuming the RNG sequence
+  const nextSeed = rng.nextInt(0, 2147483647);
+  
   return {
     newState,
     result,
     turnEnded,
     roundEnded,
     gameEnded,
-    rngSeed: rng.getSeed()
+    rngSeed: nextSeed
   };
 }
 

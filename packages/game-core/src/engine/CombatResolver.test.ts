@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import { CombatResolver } from './CombatResolver';
+import { RNG } from './RNG';
 import { GameConfig } from '../config/gameConfig.js';
 import type { Unit } from './types';
 import { Direction } from './types';
@@ -27,10 +28,7 @@ const buildUnit = (overrides: Partial<Unit> = {}): Unit => ({
 });
 
 describe('CombatResolver', () => {
-  const originalRandom = Math.random;
-
   afterEach(() => {
-    Math.random = originalRandom;
     vi.restoreAllMocks();
   });
 
@@ -42,9 +40,10 @@ describe('CombatResolver', () => {
       stats: { ...buildUnit().stats, hp: 8, evasion: 5, armor: 1 }
     });
 
-    Math.random = vi.fn(() => 0.9); // roll 10 on both dice
+    const rng = new RNG(12345);
+    vi.spyOn(rng, 'rollDice').mockReturnValue(20); // roll 10 on both dice
 
-    const result = CombatResolver.resolveAttack(attacker, defender);
+    const result = CombatResolver.resolveAttack(attacker, defender, rng);
 
     expect(result.hit).toBe(true);
     expect(result.damage).toBe(4); // 5 attackBonus - 1 armor
@@ -60,9 +59,10 @@ describe('CombatResolver', () => {
       stats: { ...buildUnit().stats, evasion: 20 }
     });
 
-    Math.random = vi.fn(() => 0); // roll 1 on both dice
+    const rng = new RNG(54321);
+    vi.spyOn(rng, 'rollDice').mockReturnValue(2); // roll 1 on both dice
 
-    const result = CombatResolver.resolveAttack(attacker, defender);
+    const result = CombatResolver.resolveAttack(attacker, defender, rng);
 
     expect(result.hit).toBe(false);
     expect(result.damage).toBe(0);
@@ -77,9 +77,10 @@ describe('CombatResolver', () => {
       stats: { ...buildUnit().stats, armor: 10, evasion: 1 }
     });
 
-    Math.random = vi.fn(() => 0.9); // roll 10 on both dice to hit
+    const rng = new RNG(99999);
+    vi.spyOn(rng, 'rollDice').mockReturnValue(20); // roll 10 on both dice to hit
 
-    const result = CombatResolver.resolveAttack(attacker, defender);
+    const result = CombatResolver.resolveAttack(attacker, defender, rng);
 
     expect(result.hit).toBe(true);
     expect(result.damage).toBe(GameConfig.MIN_DAMAGE);
